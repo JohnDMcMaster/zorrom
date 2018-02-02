@@ -27,7 +27,11 @@ class MaskROM(object):
         self.verbose = verbose
 
     @staticmethod
-    def txtwh():
+    def desc(self):
+        return 'Unspecified'
+
+    @staticmethod
+    def txtwh(self):
         '''
         Return expected txt file width/height in the canonical orientation
         Typically this is with row/column decoding down and to the right
@@ -42,7 +46,7 @@ class MaskROM(object):
         return (), ()
 
     def bytes(self):
-        '''Assumes word in bytes for now'''
+        '''Assumes word in bytes for now. Assumes no parity bits'''
         w, h = self.txtwh()
         bits = w * h
         if bits % 8 != 0:
@@ -143,6 +147,10 @@ class MaskROM(object):
             # (c, r)
             bits = {}
             dbytes = bytearray(self.f_in.read())
+            if self.verbose:
+                print 'Bytes: %d' % len(dbytes)
+            if len(dbytes) != self.mr.bytes():
+                raise Exception()
             cols, rows = self.mr.txtwh()
             gcols, grows = self.mr.txtgroups()
             gcols = list(gcols)
@@ -152,6 +160,8 @@ class MaskROM(object):
             for offset in xrange(self.mr.bytes()):
                 for maski in xrange(8):
                     c, r = self.mr.oi2cr(offset, maski)
+                    if c >= cols or r >= rows:
+                        raise Exception('Bad c %d, r %d from off %d, maski %d' % (c, r, offset, maski))
                     bit = '1' if (dbytes[offset] & (1 << maski)) else '0'
                     bits[(c, r)] = bit
 
@@ -166,6 +176,11 @@ class MaskROM(object):
                     while col in agcols:
                         self.f_out.write(' ')
                         agcols.remove(col)
-                    self.f_out.write(bits[(col, row)])
+                    bit = bits.get((col, row), 'X')
+                    if bit == 'X':
+                        # TODO: add some sort of error flag
+                        # For now good for debugging
+                        pass
+                    self.f_out.write(bit)
                 # Newline afer every row
                 self.f_out.write('\n')

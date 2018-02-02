@@ -7,6 +7,7 @@ Reference ROM: decap #8, #9 (FIXME: add link)
 Reference version by EdHunter with help from Haze
 '''
 class D8041AH(mrom.MaskROM):
+    @staticmethod
     def desc(self):
         return 'NEC D8041AH'
 
@@ -35,6 +36,7 @@ class D8041AH(mrom.MaskROM):
         '''
         return True
 
+    # TODO: convert to oi2cr
     class Txt2Bin(mrom.MaskROM.Txt2Bin):
         def run(self):
             bits = self.txtbits()
@@ -87,8 +89,34 @@ class D8041AH(mrom.MaskROM):
 References
 -http://caps0ff.blogspot.com/2016/12/39-rom-extracted.html
 -http://siliconpr0n.org/map/taito/m-001/mz_mit20x/
-# TODO: requested source code. Add something if we get it
 '''
 class MSL8042(mrom.MaskROM):
-    def run(self):
-        raise Exception("FIXME")
+    @staticmethod
+    def desc(self):
+        return 'Mitsubishi MSL8042'
+
+    @staticmethod
+    def txtwh():
+        return (16 * 8, 16 * 8)
+
+    @staticmethod
+    def txtgroups():
+        return xrange(8, 16 * 8, 8), xrange(2, 64 * 2, 2)
+
+    @staticmethod
+    def invert():
+        return False
+
+    def oi2cr(self, offset, maski):
+        _cols, rows = self.txtwh()
+        '''
+        Lowest address as the bottom
+        One bit from each column group
+        '''
+        # Word 0 leftmost within groups
+        # but bit 0 at right
+        col = (7 - maski) * 16 + offset % 16
+        # first bytes at bottom
+        # each row has 16 bytes
+        row = rows - 1 - (offset // 16)
+        return (col, row)
