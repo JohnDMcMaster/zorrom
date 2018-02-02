@@ -1,5 +1,3 @@
-import string
-
 from util import hexdump
 import mrom
 

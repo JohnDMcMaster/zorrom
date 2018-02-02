@@ -1,12 +1,15 @@
 import mrom
 
 '''
-References
-https://github.com/andrew-gardner/django-monkeys/blob/master/tools/romimg.py
+The row and column decode logic should be up and right
 
-Think 34 is the same layout
+Reference
+https://siliconpr0n.org/map/sega/315-5571/mz_mit20x/
+Rotate 90 CW to get expected rotation
+
+Think MB86233/MB86234 is the same layout
 '''
-class MB86233(mrom.MaskROM):
+class MB8623x(mrom.MaskROM):
     def desc(self):
         return 'Fujitsu MB86233/MB86234'
 
