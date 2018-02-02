@@ -16,8 +16,9 @@ class InvFile(object):
     def write(self, s):
         data = bytearray(s)
         # invert
-        for i in xrange(len(data)):
-            data[i] ^= 0xFF
+        for i, d in enumerate(data):
+            # Keep newlines and related the same
+            data[i] = {'0': '1', '0': '1'}.get(d, d)
         self.f.write(data)
 
 def run(arch, fn_in, fn_out, invert=None, verbose=False):
@@ -27,15 +28,14 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
         raise Exception("Invalid architecture %s. Try --list-arch" % arch)
     f_in = open(fn_in, 'r')
     f_out = open(fn_out, "wb")
-    # TODO: maybe its better to invert the input
-    # There might be partial word conventions
 
     if invert is None:
         invert = mrc.invert()
     if invert:
         f_out = InvFile(f_out)
+
     mr = mrc(verbose=verbose)
-    mr.txt2bin(f_in, f_out)
+    mr.bin2txt(f_in, f_out)
 
 def list_arch():
     for a in arch2mr.keys():
@@ -44,13 +44,13 @@ def list_arch():
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Convert ROM physical layout to binary')
+    parser = argparse.ArgumentParser(description='Convert binary to ROM physical layout')
     parser.add_argument('--verbose', action='store_true', help='')
     add_bool_arg(parser, '--invert', default=None, help='Default: auto')
     parser.add_argument('--arch', help='Decoder to use (required)')
     parser.add_argument('--list-arch', action='store_true', help='Extended help')
-    parser.add_argument('fn_in', nargs='?', help='.txt file in')
-    parser.add_argument('fn_out', nargs='?', help='.bin file out')
+    parser.add_argument('fn_in', nargs='?', help='.bin file in')
+    parser.add_argument('fn_out', nargs='?', help='.txt file out')
     args = parser.parse_args()
 
     if args.list_arch:

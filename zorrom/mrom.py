@@ -34,6 +34,13 @@ class MaskROM(object):
         '''
         raise Exception("Required")
 
+    @staticmethod
+    def txtgroups():
+        '''Return two iterators giving the x/col and yrow break points within a row/column'''
+        # Before the given entry
+        # ie 1 means put a space between the first and second entry
+        return (), ()
+
     def bytes(self):
         '''Assumes word in bytes for now'''
         w, h = self.txtwh()
@@ -58,13 +65,17 @@ class MaskROM(object):
     # You must implement one of these
     def oi2cr(self, offset, maski):
         '''Byte offset+msak to bit column+row'''
-        return self.ob2cr(offset, mask_b2i(maski))
+        return self.ob2cr(offset, mask_i2b(maski))
     def ob2cr(self, offset, maskb):
         '''Given (offset, binary mask) return image row/col return byte'''
-        return self.oi2cr(offset, mask_i2b(maskb))
+        return self.oi2cr(offset, mask_b2i(maskb))
 
     def txt2bin(self, f_in, f_out):
         t = self.Txt2Bin(self, f_in, f_out, verbose=self.verbose)
+        t.run()
+
+    def bin2txt(self, f_in, f_out):
+        t = self.Bin2Txt(self, f_in, f_out, verbose=self.verbose)
         t.run()
 
     class Txt2Bin(object):
@@ -77,11 +88,7 @@ class MaskROM(object):
         def txt(self):
             '''Read input file, stripping extra whitespace and checking format'''
             ret = ''
-            wh = self.mr.txtwh()
-            if wh:
-                w, h = wh
-            else:
-                w, h = None, None
+            w, h = self.mr.txtwh()
             lines = 0
             for linei, l in enumerate(self.f_in):
                 l = l.strip().replace(' ', '')
@@ -123,3 +130,42 @@ class MaskROM(object):
                     if bit == '1':
                         byte |= 1 << maski
                 self.f_out.write(chr(byte))
+
+    class Bin2Txt(object):
+        def __init__(self, mr, f_in, f_out, verbose=False):
+            self.mr = mr
+            self.f_in = f_in
+            self.f_out= f_out
+            self.verbose = verbose
+    
+        # Default impl based off of oi2rc()
+        def run(self):
+            # (c, r)
+            bits = {}
+            dbytes = bytearray(self.f_in.read())
+            cols, rows = self.mr.txtwh()
+            gcols, grows = self.mr.txtgroups()
+            gcols = list(gcols)
+            grows = list(grows)
+
+            # Build bit state
+            for offset in xrange(self.mr.bytes()):
+                for maski in xrange(8):
+                    c, r = self.mr.oi2cr(offset, maski)
+                    bit = '1' if (dbytes[offset] & (1 << maski)) else '0'
+                    bits[(c, r)] = bit
+
+            # Now write it nicely formatted
+            for row in xrange(rows):
+                # Put a space between row gaps
+                while row in grows:
+                    self.f_out.write('\n')
+                    grows.remove(row)
+                agcols = list(gcols)
+                for col in xrange(cols):
+                    while col in agcols:
+                        self.f_out.write(' ')
+                        agcols.remove(col)
+                    self.f_out.write(bits[(col, row)])
+                # Newline afer every row
+                self.f_out.write('\n')

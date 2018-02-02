@@ -22,6 +22,11 @@ class D8041AH(mrom.MaskROM):
         return (128, 66)
 
     @staticmethod
+    def txtgroups():
+        # Take literal image layout with no extra breaks
+        return (), xrange(1, 66, 2)
+
+    @staticmethod
     def invert():
         '''
         Actual: bit with extra circle contact => 0

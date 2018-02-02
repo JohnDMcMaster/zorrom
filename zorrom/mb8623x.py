@@ -18,6 +18,12 @@ class MB8623x(mrom.MaskROM):
         return (32 * 8, 32 * 8)
 
     @staticmethod
+    def txtgroups():
+        # Use monkey convention breaking on groups of 8
+        # Actual has no col breaks and every second row break is larger
+        return xrange(8, 32 * 8, 8), xrange(8, 32 * 8, 8)
+
+    @staticmethod
     def invert():
         return True
 
