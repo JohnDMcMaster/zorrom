@@ -89,6 +89,11 @@ class D8041AH(mrom.MaskROM):
 References
 -http://caps0ff.blogspot.com/2016/12/39-rom-extracted.html
 -http://siliconpr0n.org/map/taito/m-001/mz_mit20x/
+
+Orientation
+vs reference, rotate such that the main decoding circuitry / SRAM is to the right
+90 CCW vs the reference image
+
 '''
 class MSL8042(mrom.MaskROM):
     @staticmethod
