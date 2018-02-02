@@ -1,4 +1,4 @@
-from mrom import MaskROM, mask_b2i
+import mrom
 
 '''
 References
@@ -6,9 +6,20 @@ https://github.com/andrew-gardner/django-monkeys/blob/master/tools/romimg.py
 
 Think 34 is the same layout
 '''
-class MB86233(MaskROM):
-    def ob2rc(self, offset, maskb):
-        biti = offset * 8 + mask_b2i(maskb)
+class MB86233(mrom.MaskROM):
+    def desc(self):
+        return 'Fujitsu MB86233/MB86234'
+
+    @staticmethod
+    def txtwh():
+        return (32 * 8, 32 * 8)
+
+    @staticmethod
+    def invert():
+        return True
+
+    def oi2cr(self, offset, maski):
+        biti = offset * 8 + maski
         #print biti
         # Each column has 16 bytes
         # Actually starts from right of image
@@ -17,10 +28,6 @@ class MB86233(MaskROM):
         row = (biti % 32) * 8 + (biti / 32) % 8
         #print row
         return (col, row)
-
-    def run(self):
-        raise Exception("FIXME")
-
 
     '''
     http://siliconpr0n.org/.../mz_rom_mit20x_xpol/
@@ -37,6 +44,7 @@ class MB86233(MaskROM):
     bottom bit of the topmost column byte then forms the MSB of the first byte
     then move one byte down
     Take the same bit position for the next significnt bit    
+    '''
     '''
     def layout_bin2img(self):
         rom = None
@@ -65,4 +73,4 @@ class MB86233(MaskROM):
             #if biti > 8192 * 8 - 32:
             #    print 'romb[0x%02X] = 0x%02X' % (i, romb[i])
         return romb
-    
+    '''

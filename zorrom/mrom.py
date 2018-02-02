@@ -34,6 +34,14 @@ class MaskROM(object):
         '''
         raise Exception("Required")
 
+    def bytes(self):
+        '''Assumes word in bytes for now'''
+        w, h = self.txtwh()
+        bits = w * h
+        if bits % 8 != 0:
+            raise Exception("Irregular layout")
+        return bits // 8
+
     @staticmethod
     def invert():
         '''
@@ -47,9 +55,12 @@ class MaskROM(object):
         '''Given image row/col return byte (offset, binary mask)'''
         raise Exception("Required")
 
-    def ob2rc(self, offset, maskb):
+    # You must implement one of these
+    def oi2cr(self, offset, maski):
+        return self.ob2cr(offset, mask_b2i(maski))
+    def ob2cr(self, offset, maskb):
         '''Given (offset, binary mask) return image row/col return byte'''
-        raise Exception("Required")
+        return self.oi2cr(offset, mask_i2b(maskb))
 
     def txt2bin(self, f_in, f_out):
         t = self.Txt2Bin(self, f_in, f_out, verbose=self.verbose)
@@ -62,9 +73,6 @@ class MaskROM(object):
             self.f_out= f_out
             self.verbose = verbose
     
-        def run(self):
-            raise Exception("Required")
-
         def txt(self):
             '''Read input file, stripping extra whitespace and checking format'''
             ret = ''
@@ -95,3 +103,22 @@ class MaskROM(object):
             table = string.maketrans('','')
             not_bits = table.translate(table, '01')
             return txt.translate(table, not_bits)
+
+        # Default impl based off of oi2rc()
+        def run(self):
+            bits = self.txtbits()
+            cols, rows = self.mr.txtwh()
+
+            def get(c, r):
+                if r >= rows or c >= cols:
+                    raise ValueError("Bad row/col")
+                return bits[r * cols + c]
+
+            for offset in xrange(self.mr.bytes()):
+                byte = 0
+                for maski in xrange(8):
+                    c, r = self.mr.oi2cr(offset, maski)
+                    bit = get(c, r)
+                    if bit == '1':
+                        byte |= 1 << maski
+                self.f_out.write(chr(byte))

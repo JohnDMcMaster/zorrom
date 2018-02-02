@@ -3,7 +3,7 @@
 from PIL import Image
 import argparse
 import os
-from zorrom.archs import arch2d
+from zorrom.archs import arch2mr
 
 '''
 Given byte offset and mask return image (col, row)
@@ -83,7 +83,12 @@ def bitmap(rom1, rom2, fn_out):
     return diffs
 
 
-def run(rom1_fn, rom2_fn, fn_out, monkey_fn=None):
+def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None):
+    try:
+        mrc = arch2mr[arch]
+    except KeyError:
+        raise Exception("Invalid architecture %s. Try --list-arch" % arch)
+
     rom1b = bytearray(open(rom1_fn, 'r').read())
     rom2b = bytearray(open(rom2_fn, 'r').read())
     print 'Converting to image layout...'
@@ -123,4 +128,4 @@ if __name__ == '__main__':
     fn_out = args.out
     if not fn_out:
         fn_out = 'out.png'
-    run(rom1_fn=args.rom1, rom2_fn=args.rom2, fn_out=fn_out, args.monkey_fn)
+    run(args.arch, rom1_fn=args.rom1, rom2_fn=args.rom2, fn_out=fn_out, args.monkey_fn)

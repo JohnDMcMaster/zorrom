@@ -3,7 +3,7 @@
 import os
 
 from zorrom.util import add_bool_arg
-from zorrom.archs import arch2d
+from zorrom.archs import arch2mr
 
 # Invert bytes as they are written to file
 class InvFile(object):
@@ -22,7 +22,7 @@ class InvFile(object):
 
 def run(arch, fn_in, fn_out, invert=None, verbose=False):
     try:
-        dc = arch2d[arch]
+        mrc = arch2mr[arch]
     except KeyError:
         raise Exception("Invalid architecture %s. Try --list-arch" % arch)
     f_in = open(fn_in, 'r')
@@ -31,14 +31,14 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
     # There might be partial word conventions
 
     if invert is None:
-        invert = dc.invert()
+        invert = mrc.invert()
     if invert:
         f_out = InvFile(f_out)
-    d = dc(verbose=verbose)
-    d.txt2bin(f_in, f_out)
+    mr = mrc(verbose=verbose)
+    mr.txt2bin(f_in, f_out)
 
 def list_arch():
-    for a in arch2d.keys():
+    for a in arch2mr.keys():
         print a
 
 if __name__ == "__main__":
