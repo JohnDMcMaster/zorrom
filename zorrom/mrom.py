@@ -57,6 +57,7 @@ class MaskROM(object):
 
     # You must implement one of these
     def oi2cr(self, offset, maski):
+        '''Byte offset+msak to bit column+row'''
         return self.ob2cr(offset, mask_b2i(maski))
     def ob2cr(self, offset, maskb):
         '''Given (offset, binary mask) return image row/col return byte'''
