@@ -21,7 +21,7 @@ def mask_i2b(maski):
     return 1 << maski
 
 class MaskROM(object):
-    def __init__(self, f_in, f_out, verbose=False):
+    def __init__(self, f_in=None, f_out=None, verbose=False):
         self.f_in = f_in
         self.f_out= f_out
         self.verbose = verbose
@@ -43,37 +43,6 @@ class MaskROM(object):
         '''
         return False
 
-    def txt(self):
-        '''Read input file, stripping extra whitespace and checking format'''
-        ret = ''
-        wh = self.txtwh()
-        if wh:
-            w, h = wh
-        else:
-            w, h = None, None
-        lines = 0
-        for linei, l in enumerate(self.f_in):
-            l = l.strip().replace(' ', '')
-            if not l:
-                continue
-            if len(l) != w:
-                raise InvalidData('Line %s want length %d, got %d' % (linei, w, len(l)))
-            if l.replace('1', '').replace('0', ''):
-                raise InvalidData('Line %s unexpected char' % linei)
-            ret += l + '\n'
-            lines += 1
-        if lines != h:
-            raise InvalidData('Want %d lines, got %d' % (h, lines))
-        return ret
-
-    def txtbits(self):
-        '''Return contents as char array of bits (ie string with no whitespace)'''
-        txt = self.txt()
-        # remove all but bits
-        table = string.maketrans('','')
-        not_bits = table.translate(table, '01')
-        return txt.translate(table, not_bits)
-
     def rc2ob(self, col, row):
         '''Given image row/col return byte (offset, binary mask)'''
         raise Exception("Required")
@@ -82,5 +51,47 @@ class MaskROM(object):
         '''Given (offset, binary mask) return image row/col return byte'''
         raise Exception("Required")
 
-    def txt2bin(self):
-        raise Exception("Required")
+    def txt2bin(self, f_in, f_out):
+        t = self.Txt2Bin(self, f_in, f_out, verbose=self.verbose)
+        t.run()
+
+    class Txt2Bin(object):
+        def __init__(self, mr, f_in, f_out, verbose=False):
+            self.mr = mr
+            self.f_in = f_in
+            self.f_out= f_out
+            self.verbose = verbose
+    
+        def run(self):
+            raise Exception("Required")
+
+        def txt(self):
+            '''Read input file, stripping extra whitespace and checking format'''
+            ret = ''
+            wh = self.mr.txtwh()
+            if wh:
+                w, h = wh
+            else:
+                w, h = None, None
+            lines = 0
+            for linei, l in enumerate(self.f_in):
+                l = l.strip().replace(' ', '')
+                if not l:
+                    continue
+                if len(l) != w:
+                    raise InvalidData('Line %s want length %d, got %d' % (linei, w, len(l)))
+                if l.replace('1', '').replace('0', ''):
+                    raise InvalidData('Line %s unexpected char' % linei)
+                ret += l + '\n'
+                lines += 1
+            if lines != h:
+                raise InvalidData('Want %d lines, got %d' % (h, lines))
+            return ret
+    
+        def txtbits(self):
+            '''Return contents as char array of bits (ie string with no whitespace)'''
+            txt = self.txt()
+            # remove all but bits
+            table = string.maketrans('','')
+            not_bits = table.translate(table, '01')
+            return txt.translate(table, not_bits)

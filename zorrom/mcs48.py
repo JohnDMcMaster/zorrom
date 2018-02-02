@@ -1,13 +1,14 @@
 import string
 
 from util import hexdump
-from mrom import MaskROM
+import mrom
+
 
 '''
 Reference ROM: decap #8, #9 (FIXME: add link)
 Reference version by EdHunter with help from Haze
 '''
-class D8041AH(MaskROM):
+class D8041AH(mrom.MaskROM):
     def desc(self):
         return 'NEC D8041AH'
 
@@ -31,52 +32,53 @@ class D8041AH(MaskROM):
         '''
         return True
 
-    def txt2bin(self):
-        bits = self.txtbits()
-    
-        def bits2byte(s):
-            b = 0
-            for bit in s:
-                b = b << 1
-                b = b | int(bit)
-            return chr(b)
+    class Txt2Bin(mrom.MaskROM.Txt2Bin):
+        def run(self):
+            bits = self.txtbits()
         
-        data = ""
-        for a in range(0, len(bits), 128):
-            s = bits[a:a+128]
-            for b in range(0, 16):
-                x = ""
-                for c in range(0, 8):
-                    x = x + s[(c*16)+b:(c*16)+b+1]
-                data = data + bits2byte(x)
+            def bits2byte(s):
+                b = 0
+                for bit in s:
+                    b = b << 1
+                    b = b | int(bit)
+                return chr(b)
+            
+            data = ""
+            for a in range(0, len(bits), 128):
+                s = bits[a:a+128]
+                for b in range(0, 16):
+                    x = ""
+                    for c in range(0, 8):
+                        x = x + s[(c*16)+b:(c*16)+b+1]
+                    data = data + bits2byte(x)
+            
+            # rotate - thanks haze
+            ROM = bytearray(data)
+            ROM2 = bytearray(data)
+            
+            destaddr = 0;
+            for i in range(0,4):
+                for j in range(0,0x400, 4):
+                    sourceaddr = j+i
+                    ROM2[destaddr] = ROM[sourceaddr]
+                    destaddr = destaddr + 1
         
-        # rotate - thanks haze
-        ROM = bytearray(data)
-        ROM2 = bytearray(data)
-        
-        destaddr = 0;
-        for i in range(0,4):
-            for j in range(0,0x400, 4):
-                sourceaddr = j+i
-                ROM2[destaddr] = ROM[sourceaddr]
-                destaddr = destaddr + 1
-    
-        destaddr = 0;
-        for i in range(0,4):
-            for j in range(0,0x400, 4):
-                sourceaddr = j+i
-                ROM[destaddr] = ROM2[sourceaddr]
-                destaddr = destaddr + 1
-        
-        # rearrange
-        data = str(ROM)[0x300:0x400] + str(ROM)[0x200:0x300] + str(ROM)[0x100:0x200] + str(ROM)[0x000:0x100]
-        
-        if self.verbose:
-            print "### data invert ###"
-            print hexdump(data)
-            print
-        
-        self.f_out.write(data)
+            destaddr = 0;
+            for i in range(0,4):
+                for j in range(0,0x400, 4):
+                    sourceaddr = j+i
+                    ROM[destaddr] = ROM2[sourceaddr]
+                    destaddr = destaddr + 1
+            
+            # rearrange
+            data = str(ROM)[0x300:0x400] + str(ROM)[0x200:0x300] + str(ROM)[0x100:0x200] + str(ROM)[0x000:0x100]
+            
+            if self.verbose:
+                print "### data invert ###"
+                print hexdump(data)
+                print
+            
+            self.f_out.write(data)
 
 '''
 References
@@ -84,6 +86,6 @@ References
 -http://siliconpr0n.org/map/taito/m-001/mz_mit20x/
 # TODO: requested source code. Add something if we get it
 '''
-class MSL8042(MaskROM):
+class MSL8042(mrom.MaskROM):
     def run(self):
         raise Exception("FIXME")

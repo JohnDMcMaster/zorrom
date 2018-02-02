@@ -1,18 +1,9 @@
+#!/usr/bin/env python
+
 import os
 
 from zorrom.util import add_bool_arg
-
-from zorrom import mcs48
-#from zorrom import mb8623x
-#from zorrom import snes_
-
-arch2d = {
-    'd8041ah':  mcs48.D8041AH,
-    #'mb86233':  mb8623x.MB86233,
-    #'msl8042':  mcs48.MSL8042,
-    #'snes_cic': snes.SnesCIC,
-    #'snes_pif': snes.SnesPIF,
-}
+from zorrom.archs import arch2d
 
 # Invert bytes as they are written to file
 class InvFile(object):
@@ -43,8 +34,8 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
         invert = dc.invert()
     if invert:
         f_out = InvFile(f_out)
-    d = dc(f_in, f_out, verbose=verbose)
-    d.txt2bin()
+    d = dc(verbose=verbose)
+    d.txt2bin(f_in, f_out)
 
 def list_arch():
     for a in arch2d.keys():
