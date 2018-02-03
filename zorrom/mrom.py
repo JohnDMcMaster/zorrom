@@ -126,13 +126,18 @@ class MaskROM(object):
                     raise ValueError("Bad row/col")
                 return bits[r * cols + c]
 
+            crs = {}
             for offset in xrange(self.mr.bytes()):
                 byte = 0
                 for maski in xrange(8):
                     c, r = self.mr.oi2cr(offset, maski)
+                    if (c, r) in crs:
+                        offset2, maski2 = crs[(c, r)]
+                        raise Exception("Duplicate c=%d, r=%d: (o %d, i %d) vs (o %d, i %d)" % (c, r, offset, maski, offset2, maski2))
                     bit = get(c, r)
                     if bit == '1':
                         byte |= 1 << maski
+                    crs[(c, r)] = (offset, maski)
                 self.f_out.write(chr(byte))
 
     class Bin2Txt(object):

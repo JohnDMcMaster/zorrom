@@ -22,6 +22,9 @@ class D8041AH(mrom.MaskROM):
         '''
         return (128, 66)
 
+    def bytes(self):
+        return 128 * 64 // 8
+
     @staticmethod
     def txtgroups():
         # Take literal image layout with no extra breaks
@@ -36,54 +39,42 @@ class D8041AH(mrom.MaskROM):
         '''
         return True
 
-    # TODO: convert to oi2cr
-    class Txt2Bin(mrom.MaskROM.Txt2Bin):
-        def run(self):
-            bits = self.txtbits()
+    def oi2cr(self, offset, maski):
+        '''
+        Each col right % 4 adds +0x40
+        Each col right +4 is sequence
+            0:  0x00000300
+            4:  0x00000200
+            8:  0x00000100
+            12: 0x00000000
+        Then moves onto next bit
+        First bit is 0x80, then 0x40, then 0x20, etc
+        This takes 4 * 4 * 8 => 128, the row size
+
+        Next row advances to next byte
         
-            def bits2byte(s):
-                b = 0
-                for bit in s:
-                    b = b << 1
-                    b = b | int(bit)
-                return chr(b)
-            
-            data = ""
-            for a in range(0, len(bits), 128):
-                s = bits[a:a+128]
-                for b in range(0, 16):
-                    x = ""
-                    for c in range(0, 8):
-                        x = x + s[(c*16)+b:(c*16)+b+1]
-                    data = data + bits2byte(x)
-            
-            # rotate - thanks haze
-            ROM = bytearray(data)
-            ROM2 = bytearray(data)
-            
-            destaddr = 0;
-            for i in range(0,4):
-                for j in range(0,0x400, 4):
-                    sourceaddr = j+i
-                    ROM2[destaddr] = ROM[sourceaddr]
-                    destaddr = destaddr + 1
-        
-            destaddr = 0;
-            for i in range(0,4):
-                for j in range(0,0x400, 4):
-                    sourceaddr = j+i
-                    ROM[destaddr] = ROM2[sourceaddr]
-                    destaddr = destaddr + 1
-            
-            # rearrange
-            data = str(ROM)[0x300:0x400] + str(ROM)[0x200:0x300] + str(ROM)[0x100:0x200] + str(ROM)[0x000:0x100]
-            
-            if self.verbose:
-                print "### data invert ###"
-                print hexdump(data)
-                print
-            
-            self.f_out.write(data)
+        That is, offset address maps as follows
+        1024 bit => 10 bits
+        xx xxxx xxxx
+
+        column 128 bits => 7 bits
+        bbb rrcc
+        b: bitoff
+        r: colrange
+        c: col40
+        '''
+        # mask 0xc
+        colrange = {
+            0x0300: 0x0,
+            0x0200: 0x4,
+            0x0100: 0x8,
+            0x0000: 0xc,
+            }[offset & 0x0300]
+        bitoff = (7 - maski) * 0x10
+        col40 = (offset // 0x40) % 4
+        col = bitoff | colrange | col40
+        row = offset % 64
+        return (col, row)
 
 '''
 References
@@ -93,7 +84,6 @@ References
 Orientation
 vs reference, rotate such that the main decoding circuitry / SRAM is to the right
 90 CCW vs the reference image
-
 '''
 class MSL8042(mrom.MaskROM):
     @staticmethod
