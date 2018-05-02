@@ -18,7 +18,7 @@ class InvFile(object):
         # invert
         for i, d in enumerate(data):
             # Keep newlines and related the same
-            data[i] = {'0': '1', '0': '1'}.get(d, d)
+            data[i] = {ord('0'): ord('1'), ord('1'): ord('0')}.get(d, d)
         self.f.write(data)
 
 def run(arch, fn_in, fn_out, invert=None, verbose=False):

@@ -85,10 +85,10 @@ Orientation
 vs reference, rotate such that the main decoding circuitry / SRAM is to the right
 90 CCW vs the reference image
 '''
-class MSL8042(mrom.MaskROM):
+class M5L8042(mrom.MaskROM):
     @staticmethod
     def desc(self):
-        return 'Mitsubishi MSL8042'
+        return 'Mitsubishi M5L8042'
 
     @staticmethod
     def txtwh():
