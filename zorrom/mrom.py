@@ -149,7 +149,7 @@ class MaskROM(object):
                     if bit == '1':
                         byte |= 1 << maski
                     crs[(c, r)] = (offset, maski)
-                self.f_out.write(byte)
+                self.f_out.write(bytes([byte]))
 
     class Bin2Txt(object):
         def __init__(self, mr, f_in, f_out, verbose=False):
