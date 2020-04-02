@@ -1,4 +1,11 @@
-import string
+def keeponly(s, keep):
+    """
+    py2
+    table = string.maketrans('','')
+    not_bits = table.translate(table, )
+    return txt.translate(table, not_bits)
+    """
+    return ''.join([x for x in s if x in keep])
 
 class InvalidData(Exception):
     pass
@@ -110,11 +117,7 @@ class MaskROM(object):
     
         def txtbits(self):
             '''Return contents as char array of bits (ie string with no whitespace)'''
-            txt = self.txt()
-            # remove all but bits
-            table = string.maketrans('','')
-            not_bits = table.translate(table, '01')
-            return txt.translate(table, not_bits)
+            return keeponly(self.txt(), '01')
 
         # Default impl based off of oi2rc()
         def run(self):
@@ -127,9 +130,9 @@ class MaskROM(object):
                 return bits[r * cols + c]
 
             crs = {}
-            for offset in xrange(self.mr.bytes()):
+            for offset in range(self.mr.bytes()):
                 byte = 0
-                for maski in xrange(8):
+                for maski in range(8):
                     c, r = self.mr.oi2cr(offset, maski)
                     if (c, r) in crs:
                         offset2, maski2 = crs[(c, r)]
@@ -138,7 +141,7 @@ class MaskROM(object):
                     if bit == '1':
                         byte |= 1 << maski
                     crs[(c, r)] = (offset, maski)
-                self.f_out.write(chr(byte))
+                self.f_out.write(byte)
 
     class Bin2Txt(object):
         def __init__(self, mr, f_in, f_out, verbose=False):
@@ -153,7 +156,7 @@ class MaskROM(object):
             bits = {}
             dbytes = bytearray(self.f_in.read())
             if self.verbose:
-                print 'Bytes: %d' % len(dbytes)
+                print('Bytes: %d' % len(dbytes))
             if len(dbytes) != self.mr.bytes():
                 raise Exception()
             cols, rows = self.mr.txtwh()
@@ -162,8 +165,8 @@ class MaskROM(object):
             grows = list(grows)
 
             # Build bit state
-            for offset in xrange(self.mr.bytes()):
-                for maski in xrange(8):
+            for offset in range(self.mr.bytes()):
+                for maski in range(8):
                     c, r = self.mr.oi2cr(offset, maski)
                     if c >= cols or r >= rows:
                         raise Exception('Bad c %d, r %d from off %d, maski %d' % (c, r, offset, maski))
@@ -171,13 +174,13 @@ class MaskROM(object):
                     bits[(c, r)] = bit
 
             # Now write it nicely formatted
-            for row in xrange(rows):
+            for row in range(rows):
                 # Put a space between row gaps
                 while row in grows:
                     self.f_out.write('\n')
                     grows.remove(row)
                 agcols = list(gcols)
-                for col in xrange(cols):
+                for col in range(cols):
                     while col in agcols:
                         self.f_out.write(' ')
                         agcols.remove(col)

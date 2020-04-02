@@ -1,10 +1,12 @@
-from util import hexdump
-import mrom
+from zorrom.util import hexdump
+from zorrom import mrom
 
 
 '''
 Reference ROM: decap #8, #9 (FIXME: add link)
 Reference version by EdHunter with help from Haze
+
+NEC D8041AH
 '''
 class D8041AH(mrom.MaskROM):
     @staticmethod
@@ -28,7 +30,7 @@ class D8041AH(mrom.MaskROM):
     @staticmethod
     def txtgroups():
         # Take literal image layout with no extra breaks
-        return (), xrange(1, 66, 2)
+        return (), range(1, 66, 2)
 
     @staticmethod
     def invert():
@@ -84,6 +86,8 @@ References
 Orientation
 vs reference, rotate such that the main decoding circuitry / SRAM is to the right
 90 CCW vs the reference image
+
+Intersil M5L8042
 '''
 class M5L8042(mrom.MaskROM):
     @staticmethod
@@ -96,7 +100,7 @@ class M5L8042(mrom.MaskROM):
 
     @staticmethod
     def txtgroups():
-        return xrange(8, 16 * 8, 8), xrange(2, 64 * 2, 2)
+        return range(8, 16 * 8, 8), range(2, 64 * 2, 2)
 
     @staticmethod
     def invert():

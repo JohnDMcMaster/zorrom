@@ -1,4 +1,4 @@
-import mrom
+from zorrom import mrom
 
 '''
 The row and column decode logic should be up and right
@@ -22,7 +22,7 @@ class MB8623x(mrom.MaskROM):
     def txtgroups():
         # Use monkey convention breaking on groups of 8
         # Actual has no col breaks and every second row break is larger
-        return xrange(8, 32 * 8, 8), xrange(8, 32 * 8, 8)
+        return range(8, 32 * 8, 8), range(8, 32 * 8, 8)
 
     @staticmethod
     def invert():

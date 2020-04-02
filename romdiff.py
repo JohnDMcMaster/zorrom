@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # backpropagate ROM into image
 
 from PIL import Image
@@ -37,8 +38,8 @@ def bit_b2i(offset, maskb=None, maski=None):
 Given image row/col return byte (offset, binary mask)
 '''
 bit_i2bm = {}
-for offset in xrange(8192):
-    for maski in xrange(8):
+for offset in range(8192):
+    for maski in range(8):
         col, row = bit_b2i(offset, maski=maski)
         bit_i2bm[(col, row)] = offset, 1 << maski
 def bit_i2b(col, row):
@@ -52,8 +53,8 @@ def romb2romi(romb):
         raise ValueError()
     ret = {}
 
-    for col in xrange(32 * 8):
-        for row in xrange(32 * 8):
+    for col in range(32 * 8):
+        for row in range(32 * 8):
             offset, maskb = bit_i2b(col, row)
             if maskb > 0x80:
                 raise ValueError()
@@ -66,8 +67,8 @@ def bitmap(rom1, rom2, fn_out):
     BIT_WH = 32 * 8                                                                                                                                                                                                                                        
     im = Image.new("RGB", (BIT_WH, BIT_WH), "black")
     diffs = []
-    for col in xrange(BIT_WH):
-        for row in xrange(BIT_WH):
+    for col in range(BIT_WH):
+        for row in range(BIT_WH):
             b1 = rom1[(col, row)]
             b2 = rom2[(col, row)]
             if b1 != b2:

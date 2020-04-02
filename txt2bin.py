@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 
@@ -16,7 +16,7 @@ class InvFile(object):
     def write(self, s):
         data = bytearray(s)
         # invert
-        for i in xrange(len(data)):
+        for i in range(len(data)):
             data[i] ^= 0xFF
         self.f.write(data)
 
@@ -39,7 +39,7 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
 
 def list_arch():
     for a in arch2mr.keys():
-        print a
+        print(a)
 
 if __name__ == "__main__":
     import argparse
