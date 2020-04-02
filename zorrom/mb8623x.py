@@ -1,5 +1,4 @@
 from zorrom import mrom
-
 '''
 The row and column decode logic should be up and right
 
@@ -9,6 +8,8 @@ Rotate 90 CW to get expected rotation
 
 Think MB86233/MB86234 is the same layout
 '''
+
+
 class MB8623x(mrom.MaskROM):
     @staticmethod
     def desc(self):

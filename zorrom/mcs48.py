@@ -1,13 +1,13 @@
 from zorrom.util import hexdump
 from zorrom import mrom
-
-
 '''
 Reference ROM: decap #8, #9 (FIXME: add link)
 Reference version by EdHunter with help from Haze
 
 NEC D8041AH
 '''
+
+
 class D8041AH(mrom.MaskROM):
     @staticmethod
     def desc(self):
@@ -71,12 +71,13 @@ class D8041AH(mrom.MaskROM):
             0x0200: 0x4,
             0x0100: 0x8,
             0x0000: 0xc,
-            }[offset & 0x0300]
+        }[offset & 0x0300]
         bitoff = (7 - maski) * 0x10
         col40 = (offset // 0x40) % 4
         col = bitoff | colrange | col40
         row = offset % 64
         return (col, row)
+
 
 '''
 References
@@ -89,6 +90,8 @@ vs reference, rotate such that the main decoding circuitry / SRAM is to the righ
 
 Intersil M5L8042
 '''
+
+
 class M5L8042(mrom.MaskROM):
     @staticmethod
     def desc(self):

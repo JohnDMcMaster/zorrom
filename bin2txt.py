@@ -5,6 +5,7 @@ import os
 from zorrom.util import add_bool_arg
 from zorrom.archs import arch2mr
 
+
 # Invert bytes as they are written to file
 class InvFile(object):
     def __init__(self, f):
@@ -20,6 +21,7 @@ class InvFile(object):
             # Keep newlines and related the same
             data[i] = {ord('0'): ord('1'), ord('1'): ord('0')}.get(d, d)
         self.f.write(data)
+
 
 def run(arch, fn_in, fn_out, invert=None, verbose=False):
     try:
@@ -37,18 +39,23 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
     mr = mrc(verbose=verbose)
     mr.bin2txt(f_in, f_out)
 
+
 def list_arch():
     for a in arch2mr.keys():
         print a
 
+
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Convert binary to ROM physical layout')
+    parser = argparse.ArgumentParser(
+        description='Convert binary to ROM physical layout')
     parser.add_argument('--verbose', action='store_true', help='')
     add_bool_arg(parser, '--invert', default=None, help='Default: auto')
     parser.add_argument('--arch', help='Decoder to use (required)')
-    parser.add_argument('--list-arch', action='store_true', help='Extended help')
+    parser.add_argument('--list-arch',
+                        action='store_true',
+                        help='Extended help')
     parser.add_argument('fn_in', nargs='?', help='.bin file in')
     parser.add_argument('fn_out', nargs='?', help='.txt file out')
     args = parser.parse_args()
@@ -64,4 +71,8 @@ if __name__ == "__main__":
             if not postfix:
                 raise Exception("Can't auto name output file")
             fn_out = prefix + '.bin'
-        run(args.arch, args.fn_in, fn_out, invert=args.invert, verbose=args.verbose)
+        run(args.arch,
+            args.fn_in,
+            fn_out,
+            invert=args.invert,
+            verbose=args.verbose)

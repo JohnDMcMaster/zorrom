@@ -3,9 +3,9 @@ from zorrom import mb8623x
 #from zorrom import snes
 
 arch2mr = {
-    'd8041ah':  mcs48.D8041AH,
-    'mb8623x':  mb8623x.MB8623x,
-    'm5l8042':  mcs48.M5L8042,
+    'd8041ah': mcs48.D8041AH,
+    'mb8623x': mb8623x.MB8623x,
+    'm5l8042': mcs48.M5L8042,
     #'snes_cic': snes.SnesCIC,
     #'snes_pif': snes.SnesPIF,
 }

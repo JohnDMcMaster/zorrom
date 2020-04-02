@@ -5,12 +5,13 @@ from PIL import Image
 import argparse
 import os
 from zorrom.archs import arch2mr
-
 '''
 Given byte offset and mask return image (col, row)
 maskb: binary mask
 maski: bitshi
 '''
+
+
 def bit_b2i(offset, maskb=None, maski=None):
     maskin = {
         0x80: 7,
@@ -21,7 +22,7 @@ def bit_b2i(offset, maskb=None, maski=None):
         0x04: 2,
         0x02: 1,
         0x01: 0,
-        }
+    }
     if maski is None:
         maski = maskin[maskb]
     biti = offset * 8 + maski
@@ -34,6 +35,7 @@ def bit_b2i(offset, maskb=None, maski=None):
     #print row
     return (col, row)
 
+
 '''
 Given image row/col return byte (offset, binary mask)
 '''
@@ -42,12 +44,17 @@ for offset in range(8192):
     for maski in range(8):
         col, row = bit_b2i(offset, maski=maski)
         bit_i2bm[(col, row)] = offset, 1 << maski
+
+
 def bit_i2b(col, row):
     return bit_i2bm[(col, row)]
+
 
 '''
 Convert a bytearray ROM file into a row/col bit dict w/ image convention
 '''
+
+
 def romb2romi(romb):
     if len(romb) != 8192:
         raise ValueError()
@@ -63,8 +70,9 @@ def romb2romi(romb):
             ret[(col, row)] = bit
     return ret
 
+
 def bitmap(rom1, rom2, fn_out):
-    BIT_WH = 32 * 8                                                                                                                                                                                                                                        
+    BIT_WH = 32 * 8
     im = Image.new("RGB", (BIT_WH, BIT_WH), "black")
     diffs = []
     for col in range(BIT_WH):
@@ -111,16 +119,26 @@ def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None):
         vg_row = row / 8
         vl_row = row % 8
         if monkey_fn:
-            print '  http://cs.sipr0n.org/static/%s/%s_%02d_%02d.png @ col %d, row %d' % (monkey_fn, monkey_fn, vg_col, vg_row, vl_col, vl_row)
+            print '  http://cs.sipr0n.org/static/%s/%s_%02d_%02d.png @ col %d, row %d' % (
+                monkey_fn, monkey_fn, vg_col, vg_row, vl_col, vl_row)
+
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Visually diff two .bin in original image layout, printing differences')
+    parser = argparse.ArgumentParser(
+        description=
+        'Visually diff two .bin in original image layout, printing differences'
+    )
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
     parser.add_argument('--arch', help='Decoder to use (required)')
-    parser.add_argument('--monkey-fn', default=None, help='Monkey URL reference. Ex: sega_315-5677_xpol')
+    parser.add_argument('--monkey-fn',
+                        default=None,
+                        help='Monkey URL reference. Ex: sega_315-5677_xpol')
     parser.add_argument('rom1', help='ROM1 file name')
     parser.add_argument('rom2', help='ROM2 file name')
-    parser.add_argument('out', nargs='?', default=None, help='Output file name')
+    parser.add_argument('out',
+                        nargs='?',
+                        default=None,
+                        help='Output file name')
     args = parser.parse_args()
 
     if args.arch != 'mb86233':
@@ -129,4 +147,8 @@ if __name__ == '__main__':
     fn_out = args.out
     if not fn_out:
         fn_out = 'out.png'
-    run(args.arch, rom1_fn=args.rom1, rom2_fn=args.rom2, fn_out=fn_out, args.monkey_fn)
+    run(args.arch,
+        rom1_fn=args.rom1,
+        rom2_fn=args.rom2,
+        fn_out=fn_out,
+        args.monkey_fn)

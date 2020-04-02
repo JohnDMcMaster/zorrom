@@ -7,8 +7,10 @@ def keeponly(s, keep):
     """
     return ''.join([x for x in s if x in keep])
 
+
 class InvalidData(Exception):
     pass
+
 
 def mask_b2i(maskb):
     '''Convert bitmask to bit number'''
@@ -21,16 +23,18 @@ def mask_b2i(maskb):
         0x04: 2,
         0x02: 1,
         0x01: 0,
-        }[maskb]
+    }[maskb]
+
 
 def mask_i2b(maski):
     '''Convert bit number to bitmask'''
     return 1 << maski
 
+
 class MaskROM(object):
     def __init__(self, f_in=None, f_out=None, verbose=False):
         self.f_in = f_in
-        self.f_out= f_out
+        self.f_out = f_out
         self.verbose = verbose
 
     @staticmethod
@@ -77,6 +81,7 @@ class MaskROM(object):
     def oi2cr(self, offset, maski):
         '''Byte offset+msak to bit column+row'''
         return self.ob2cr(offset, mask_i2b(maski))
+
     def ob2cr(self, offset, maskb):
         '''Given (offset, binary mask) return image row/col return byte'''
         return self.oi2cr(offset, mask_b2i(maskb))
@@ -93,9 +98,9 @@ class MaskROM(object):
         def __init__(self, mr, f_in, f_out, verbose=False):
             self.mr = mr
             self.f_in = f_in
-            self.f_out= f_out
+            self.f_out = f_out
             self.verbose = verbose
-    
+
         def txt(self):
             '''Read input file, stripping extra whitespace and checking format'''
             ret = ''
@@ -106,7 +111,8 @@ class MaskROM(object):
                 if not l:
                     continue
                 if len(l) != w:
-                    raise InvalidData('Line %s want length %d, got %d' % (linei, w, len(l)))
+                    raise InvalidData('Line %s want length %d, got %d' %
+                                      (linei, w, len(l)))
                 if l.replace('1', '').replace('0', ''):
                     raise InvalidData('Line %s unexpected char' % linei)
                 ret += l + '\n'
@@ -114,7 +120,7 @@ class MaskROM(object):
             if lines != h:
                 raise InvalidData('Want %d lines, got %d' % (h, lines))
             return ret
-    
+
         def txtbits(self):
             '''Return contents as char array of bits (ie string with no whitespace)'''
             return keeponly(self.txt(), '01')
@@ -136,7 +142,9 @@ class MaskROM(object):
                     c, r = self.mr.oi2cr(offset, maski)
                     if (c, r) in crs:
                         offset2, maski2 = crs[(c, r)]
-                        raise Exception("Duplicate c=%d, r=%d: (o %d, i %d) vs (o %d, i %d)" % (c, r, offset, maski, offset2, maski2))
+                        raise Exception(
+                            "Duplicate c=%d, r=%d: (o %d, i %d) vs (o %d, i %d)"
+                            % (c, r, offset, maski, offset2, maski2))
                     bit = get(c, r)
                     if bit == '1':
                         byte |= 1 << maski
@@ -147,9 +155,9 @@ class MaskROM(object):
         def __init__(self, mr, f_in, f_out, verbose=False):
             self.mr = mr
             self.f_in = f_in
-            self.f_out= f_out
+            self.f_out = f_out
             self.verbose = verbose
-    
+
         # Default impl based off of oi2rc()
         def run(self):
             # (c, r)
@@ -169,7 +177,9 @@ class MaskROM(object):
                 for maski in range(8):
                     c, r = self.mr.oi2cr(offset, maski)
                     if c >= cols or r >= rows:
-                        raise Exception('Bad c %d, r %d from off %d, maski %d' % (c, r, offset, maski))
+                        raise Exception(
+                            'Bad c %d, r %d from off %d, maski %d' %
+                            (c, r, offset, maski))
                     bit = '1' if (dbytes[offset] & (1 << maski)) else '0'
                     bits[(c, r)] = bit
 
