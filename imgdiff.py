@@ -114,7 +114,11 @@ def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None, annotate=None):
         for diff in diffs:
             col, row, b1, b2 = diff
             j["%u,%u" % (col, row)] = {}
-        json.dump(j, open(annotate, "w"), indent=4, sort_keys=True, separators=(',', ': '))
+        json.dump(j,
+                  open(annotate, "w"),
+                  indent=4,
+                  sort_keys=True,
+                  separators=(',', ': '))
 
 
 if __name__ == '__main__':
