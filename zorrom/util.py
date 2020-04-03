@@ -43,3 +43,33 @@ def tostr(buff):
         return ''.join([chr(b) for b in buff])
     else:
         assert 0, type(buff)
+
+
+'''
+Convert a bytearray ROM file into a row/col bit dict w/ image convention
+'''
+
+
+def rom_bytes2txtdict(mr, romb):
+    if len(romb) != mr.size():
+        raise ValueError()
+    ret = {}
+
+    txtw, txth = mr.txtwh()
+    for col in range(txtw):
+        for row in range(txth):
+            offset, maskb = mr.cr2ob(col, row)
+            byte = romb[offset]
+            bit = int(bool(byte & maskb)) ^ 1
+            ret[(col, row)] = bit
+    return ret
+
+
+def keeponly(s, keep):
+    """
+    py2
+    table = string.maketrans('','')
+    not_bits = table.translate(table, )
+    return txt.translate(table, not_bits)
+    """
+    return ''.join([x for x in s if x in keep])

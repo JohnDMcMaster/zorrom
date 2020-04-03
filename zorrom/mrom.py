@@ -1,3 +1,6 @@
+from io import StringIO
+
+
 def keeponly(s, keep):
     """
     py2
@@ -28,14 +31,24 @@ def mask_b2i(maskb):
 
 def mask_i2b(maski):
     '''Convert bit number to bitmask'''
+    assert 0 <= maski <= 7
     return 1 << maski
 
 
 class MaskROM(object):
-    def __init__(self, f_in=None, f_out=None, verbose=False):
-        self.f_in = f_in
-        self.f_out = f_out
+    def __init__(self, txt=None, bin=None, verbose=False):
         self.verbose = verbose
+
+        # Actual bits of a loaded ROM
+        # Canonically stored as the binary itself
+        self.binary = None
+        # Allows converting between txt and binary space
+        self.map_cr2boi = None
+        self.reindex()
+        if txt:
+            self.parse_txt(txt)
+        if bin:
+            self.parse_bin(bin)
 
     @staticmethod
     def desc(self):
@@ -50,7 +63,7 @@ class MaskROM(object):
         raise Exception("Required")
 
     @staticmethod
-    def txtgroups():
+    def txtgroups(self):
         '''Return two iterators giving the x/col and yrow break points within a row/column'''
         # Before the given entry
         # ie 1 means put a space between the first and second entry
@@ -58,14 +71,14 @@ class MaskROM(object):
 
     def bytes(self):
         '''Assumes word in bytes for now. Assumes no parity bits'''
-        w, h = self.txtwh()
+        w, h = MaskROM.txtwh()
         bits = w * h
         if bits % 8 != 0:
             raise Exception("Irregular layout")
         return bits // 8
 
     @staticmethod
-    def invert():
+    def invert(self):
         '''
         During visual entry, convention is usually to use brighter / more featureful as 1
         However, this is often actually 0
@@ -73,18 +86,46 @@ class MaskROM(object):
         '''
         return False
 
-    def rc2ob(self, col, row):
-        '''Given image row/col return byte (offset, binary mask)'''
-        raise Exception("Required")
+    def reindex(self):
+        self.map_cr2boi = {}
+        for offset in range(self.bytes()):
+            for maski in range(8):
+                col, row = self.oi2cr(offset, maski)
+                self.map_cr2boi[(col, row)] = offset, maski
+        assert len(self.map_cr2boi) != 0
+
+    def cr2ob(self, col, row):
+        '''Given image row/col return binary (byte offset, binary mask)'''
+        offset, maski = self.cr2oi(col, row)
+        return offset, mask_i2b(maski)
+
+    def cr2oi(self, col, row):
+        '''Given image row/col return binary (byte offset, bit index)'''
+        return self.map_cr2boi[(col, row)]
 
     # You must implement one of these
     def oi2cr(self, offset, maski):
-        '''Byte offset+msak to bit column+row'''
+        '''Given binary (byte offset, bit index) return image row/col'''
         return self.ob2cr(offset, mask_i2b(maski))
 
     def ob2cr(self, offset, maskb):
-        '''Given (offset, binary mask) return image row/col return byte'''
+        '''Given binary (byte offset, binary mask) return image row/col '''
         return self.oi2cr(offset, mask_b2i(maskb))
+
+    def parse_txt(self, txt):
+        assert len(txt) == self.bytes()
+        f_out = StringIO()
+        self.txt2bin(StringIO(txt), f_out)
+        self.binary = f_out.getavlue()
+
+    def parse_bin(self, bin):
+        assert len(bin) == self.bytes()
+        self.binary = bytearray(bin)
+
+    def get_cr(self, col, row):
+        assert self.binary, "Must load binary"
+        offset, maskb = self.cr2ob(col, row)
+        return bool(self.binary[offset] & maskb)
 
     def txt2bin(self, f_in, f_out):
         t = self.Txt2Bin(self, f_in, f_out, verbose=self.verbose)

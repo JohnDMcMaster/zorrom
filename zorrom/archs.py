@@ -9,3 +9,10 @@ arch2mr = {
     #'snes_cic': snes.SnesCIC,
     #'snes_pif': snes.SnesPIF,
 }
+
+
+def get_arch(arch):
+    try:
+        return arch2mr[arch]()
+    except KeyError:
+        raise Exception("Invalid architecture %s. Try --list-arch" % arch)
