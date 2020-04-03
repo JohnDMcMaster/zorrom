@@ -4,6 +4,7 @@
 from PIL import Image
 import argparse
 import os
+import json
 from zorrom import archs
 from zorrom import util
 '''
@@ -81,7 +82,7 @@ def bitmap(mrl, mrr, fn_out):
     return diffs
 
 
-def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None):
+def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None, annotate=None):
     mrl = archs.get_arch(arch)
     mrl.parse_bin(open(rom1_fn, 'rb').read())
     mrr = archs.get_arch(arch)
@@ -108,6 +109,13 @@ def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None):
                 '  http://cs.sipr0n.org/static/%s/%s_%02d_%02d.png @ col %d, row %d'
                 % (monkey_fn, monkey_fn, vg_col, vg_row, vl_col, vl_row))
 
+    if annotate:
+        j = {}
+        for diff in diffs:
+            col, row, b1, b2 = diff
+            j["%u,%u" % (col, row)] = {}
+        json.dump(j, open(annotate, "w"), indent=4, sort_keys=True, separators=(',', ': '))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -116,6 +124,7 @@ if __name__ == '__main__':
     )
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
     parser.add_argument('--arch', help='Decoder to use (required)')
+    parser.add_argument('--annotate', help='Output rompar annotate JSON')
     parser.add_argument('--monkey-fn',
                         default=None,
                         help='Monkey URL reference. Ex: sega_315-5677_xpol')
@@ -134,4 +143,5 @@ if __name__ == '__main__':
         rom1_fn=args.rom1,
         rom2_fn=args.rom2,
         fn_out=fn_out,
-        monkey_fn=args.monkey_fn)
+        monkey_fn=args.monkey_fn,
+        annotate=args.annotate)
