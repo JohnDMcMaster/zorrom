@@ -1,4 +1,4 @@
-from io import StringIO
+from io import StringIO, BytesIO
 
 
 def keeponly(s, keep):
@@ -113,10 +113,9 @@ class MaskROM(object):
         return self.oi2cr(offset, mask_b2i(maskb))
 
     def parse_txt(self, txt):
-        assert len(txt) == self.bytes()
-        f_out = StringIO()
+        f_out = BytesIO()
         self.txt2bin(StringIO(txt), f_out)
-        self.binary = f_out.getavlue()
+        self.binary = f_out.getvalue()
 
     def parse_bin(self, bin):
         assert len(bin) == self.bytes()

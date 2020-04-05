@@ -6,7 +6,7 @@ import argparse
 import os
 import json
 from zorrom import archs
-from zorrom import util
+from zorrom.util import add_bool_arg
 '''
 Given byte offset and mask return image (col, row)
 maskb: binary mask
@@ -71,7 +71,8 @@ def bitmap(mrl, mrr, fn_out):
             else:
                 if b1 != b2:
                     c = color_diff
-                    diffs.append((col, row, b1, b2))
+                    # Stored as row, col to make sorting y
+                    diffs.append((row, col, b1, b2))
                 else:
                     if b1:
                         c = color_1
@@ -79,24 +80,31 @@ def bitmap(mrl, mrr, fn_out):
                         c = color_0
             im.putpixel((col, row), c)
     im.save(fn_out)
+    # (row, col, b1, b2)
     return diffs
 
+def load_file(fn, arch, txt=False):
+    mr = archs.get_arch(arch)
+    if txt:
+        mr.parse_txt(open(fn, 'r').read())
+    else:
+        mr.parse_bin(open(fn, 'rb').read())
+    return mr
 
-def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None, annotate=None):
-    mrl = archs.get_arch(arch)
-    mrl.parse_bin(open(rom1_fn, 'rb').read())
-    mrr = archs.get_arch(arch)
-    mrr.parse_bin(open(rom2_fn, 'rb').read())
+def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None, annotate=None, txt=False):
+    mrl = load_file(rom1_fn, arch, txt=txt)
+    mrr = load_file(rom2_fn, arch, txt=txt)
 
     print('Converting to image layout...')
     dir_out = 'romdiff'
     if not os.path.exists(dir_out):
         os.mkdir(dir_out)
 
+    # (row, col, b1, b2)
     diffs = bitmap(mrl, mrr, fn_out)
 
-    for diff in diffs:
-        col, row, b1, b2 = diff
+    for diff in sorted(diffs):
+        row, col, b1, b2 = diff
         print('x%d, y%d, L: %d, R: %d' % (col, row, b1, b2))
         off, maskb = mrl.cr2ob(col, row)
         print('  Offset 0x%04X, mask 0x%02X' % (off, maskb))
@@ -108,11 +116,12 @@ def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None, annotate=None):
             print(
                 '  http://cs.sipr0n.org/static/%s/%s_%02d_%02d.png @ col %d, row %d'
                 % (monkey_fn, monkey_fn, vg_col, vg_row, vl_col, vl_row))
+    print("Bits: %u" % len(diffs))
 
     if annotate:
         j = {}
         for diff in diffs:
-            col, row, b1, b2 = diff
+            row, col, b1, b2 = diff
             j["%u,%u" % (col, row)] = {}
         json.dump(j,
                   open(annotate, "w"),
@@ -128,6 +137,7 @@ if __name__ == '__main__':
     )
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
     parser.add_argument('--arch', help='Decoder to use (required)')
+    add_bool_arg(parser, '--txt', help='Expect .txt intead of .bin files in')
     parser.add_argument('--annotate', help='Output rompar annotate JSON')
     parser.add_argument('--monkey-fn',
                         default=None,
@@ -148,4 +158,5 @@ if __name__ == '__main__':
         rom2_fn=args.rom2,
         fn_out=fn_out,
         monkey_fn=args.monkey_fn,
-        annotate=args.annotate)
+        annotate=args.annotate,
+        txt=args.txt)
