@@ -43,6 +43,10 @@ class D8041AH(mrom.MaskROM):
 
     def oi2cr(self, offset, maski):
         '''
+        2020-04-06
+        This is a candidate for the ugliest code I have ever written
+        But it works...so don't touch it unless you know what you are doing
+        
         Each col right % 4 adds +0x40
         Each col right +4 is sequence
             0:  0x00000300
@@ -66,16 +70,33 @@ class D8041AH(mrom.MaskROM):
         c: col40
         '''
 
-        # horrible back
-        fixmask = 0xC0
-        oldval = offset & fixmask
-        fixval = {
-            0xC0: 0x00,
-            0x80: 0x40,
-            0x40: 0x80,
-            0x00: 0xC0,
-            }[oldval]
-        offset = (offset & (~fixmask)) | fixval
+        # horrible hack 1
+        if 1 or offset < 0x200:
+            fixmask = 0xC0
+            oldval = offset & fixmask
+            fixval = {
+                0xC0: 0x00,
+                0x80: 0x40,
+                0x40: 0x80,
+                0x00: 0xC0,
+                }[oldval]
+            offset = (offset & (~fixmask)) | fixval
+
+        # horrible hack 2
+        if offset >= 0x200:
+            fixmask = 0x1C0
+            oldval = offset & fixmask
+            fixval = {
+                0x1C0: 0x000,
+                0x180: 0x040,
+                0x140: 0x080,
+                0x100: 0x0C0,
+                0x0C0: 0x100,
+                0x080: 0x140,
+                0x040: 0x180,
+                0x000: 0x1C0,
+                }[oldval]
+            offset = (offset & (~fixmask)) | fixval
 
         # mask 0xc
         colrange = {
