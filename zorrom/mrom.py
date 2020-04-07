@@ -126,10 +126,9 @@ class MaskROM(object):
         offset, maskb = self.cr2ob(col, row)
         return bool(self.binary[offset] & maskb)
 
-    def txt2bin(self, f_in, invert=None):
+    def txt2bin(self, f_in, invert=None, rotate=None):
         t = self.Txt2Bin(self, f_in, verbose=self.verbose)
-        ret = t.run()
-
+        ret = t.run(rotate=rotate)
         if invert is None:
             invert = self.invert()
         if invert:
@@ -148,10 +147,9 @@ class MaskROM(object):
             self.buff_out = None
             self.verbose = verbose
 
-        def txt(self):
-            '''Read input file, stripping extra whitespace and checking format'''
+        def txt(self, w, h):
+            '''Read input file, checking format and stripping everything not 01 '''
             ret = ''
-            w, h = self.mr.txtwh()
             lines = 0
             for linei, l in enumerate(self.f_in):
                 l = l.strip().replace(' ', '')
@@ -162,20 +160,71 @@ class MaskROM(object):
                                       (linei, w, len(l)))
                 if l.replace('1', '').replace('0', ''):
                     raise InvalidData('Line %s unexpected char' % linei)
-                ret += l + '\n'
+                ret += l
                 lines += 1
             if lines != h:
                 raise InvalidData('Want %d lines, got %d' % (h, lines))
             return ret
 
-        def txtbits(self):
+        def txt2dict(self, txt, w, h):
+            ret = {}
+            i = 0
+            for y in range(h):
+                for x in range(w):
+                    ret[(x, y)] = txt[i]
+                    i += 1
+            return ret
+
+        def dict2txt(self, txtdict, w, h):
+            ret = ""
+            for y in range(h):
+                for x in range(w):
+                    ret += txtdict[(x, y)]
+            return ret
+
+        def rotate_180(self, txtdict, w, h):
+            ret = {}
+            for y in range(h):
+                for x in range(w):
+                    ret[(x, y)] = txtdict[(w - x - 1, h - y - 1)]
+            return ret
+
+        def rotate_90(self, txtdict, w, h):
+            # y: x
+            # x: w - y - 1
+            ret = {}
+            for y in range(h):
+                for x in range(w):
+                    ret[(x, y)] = txtdict[(h - y - 1, x)]
+            return ret
+
+        def txtbits(self, rotate=None):
             '''Return contents as char array of bits (ie string with no whitespace)'''
-            return keeponly(self.txt(), '01')
+            assert rotate in (None, 0, 90, 180, 270)
+            w, h = self.mr.txtwh()
+            wtxt, htxt = w, h
+            if rotate == 90 or rotate == 270:
+                wtxt, htxt = h, w
+            txt = self.txt(wtxt, htxt)
+            if rotate not in (None, 0):
+                txtdict = self.txt2dict(txt, wtxt, htxt)
+                if rotate == 180:
+                    txtdict = self.rotate_180(txtdict, wtxt, htxt)
+                elif rotate == 90:
+                    txtdict = self.rotate_90(txtdict, wtxt, htxt)
+                    wtxt, htxt = htxt, wtxt
+                elif rotate == 270:
+                    txtdict = self.rotate_90(txtdict, wtxt, htxt)
+                    wtxt, htxt = htxt, wtxt
+                else:
+                    assert 0
+                txt = self.dict2txt(txtdict, wtxt, htxt)
+            return txt
 
         # Default impl based off of oi2rc()
-        def run(self):
+        def run(self, rotate=None):
             self.buff_out = bytearray()
-            bits = self.txtbits()
+            bits = self.txtbits(rotate=rotate)
             cols, rows = self.mr.txtwh()
 
             def get(c, r):
