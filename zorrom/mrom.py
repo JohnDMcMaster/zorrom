@@ -126,19 +126,26 @@ class MaskROM(object):
         offset, maskb = self.cr2ob(col, row)
         return bool(self.binary[offset] & maskb)
 
-    def txt2bin(self, f_in, f_out):
-        t = self.Txt2Bin(self, f_in, f_out, verbose=self.verbose)
-        t.run()
+    def txt2bin(self, f_in, invert=None):
+        t = self.Txt2Bin(self, f_in, verbose=self.verbose)
+        ret = t.run()
+
+        if invert is None:
+            invert = self.invert()
+        if invert:
+            ret = bytearray([x ^ 0xFF for x in ret])
+        assert self.bytes() == len(ret), "Expected %u bytes, got %u"  % (self.bytes(), len(ret))
+        return ret
 
     def bin2txt(self, f_in, f_out):
         t = self.Bin2Txt(self, f_in, f_out, verbose=self.verbose)
         t.run()
 
     class Txt2Bin(object):
-        def __init__(self, mr, f_in, f_out, verbose=False):
+        def __init__(self, mr, f_in, verbose=False):
             self.mr = mr
             self.f_in = f_in
-            self.f_out = f_out
+            self.buff_out = None
             self.verbose = verbose
 
         def txt(self):
@@ -167,6 +174,7 @@ class MaskROM(object):
 
         # Default impl based off of oi2rc()
         def run(self):
+            self.buff_out = bytearray()
             bits = self.txtbits()
             cols, rows = self.mr.txtwh()
 
@@ -189,7 +197,8 @@ class MaskROM(object):
                     if bit == '1':
                         byte |= 1 << maski
                     crs[(c, r)] = (offset, maski)
-                self.f_out.write(bytes([byte]))
+                self.buff_out.append(byte)
+            return self.buff_out
 
     class Bin2Txt(object):
         def __init__(self, mr, f_in, f_out, verbose=False):

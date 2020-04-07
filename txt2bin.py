@@ -5,40 +5,18 @@ import os
 from zorrom.util import add_bool_arg
 from zorrom.archs import arch2mr
 
-
-# Invert bytes as they are written to file
-class InvFile(object):
-    def __init__(self, f):
-        self.f = f
-
-    def flush(self):
-        self.f.flush()
-
-    def write(self, s):
-        data = bytearray(s)
-        # invert
-        for i in range(len(data)):
-            data[i] ^= 0xFF
-        self.f.write(data)
-
-
 def run(arch, fn_in, fn_out, invert=None, verbose=False):
     try:
         mrc = arch2mr[arch]
     except KeyError:
         raise Exception("Invalid architecture %s. Try --list-arch" % arch)
     f_in = open(fn_in, 'r')
-    f_out = open(fn_out, "wb")
     # TODO: maybe its better to invert the input
     # There might be partial word conventions
 
-    if invert is None:
-        invert = mrc.invert()
-    if invert:
-        f_out = InvFile(f_out)
     mr = mrc(verbose=verbose)
-    mr.txt2bin(f_in, f_out)
-
+    out_buff = mr.txt2bin(f_in, invert=invert)
+    open(fn_out, "wb").write(out_buff)
 
 def list_arch():
     for a in arch2mr.keys():
