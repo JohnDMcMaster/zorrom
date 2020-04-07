@@ -126,9 +126,9 @@ class MaskROM(object):
         offset, maskb = self.cr2ob(col, row)
         return bool(self.binary[offset] & maskb)
 
-    def txt2bin(self, f_in, invert=None, rotate=None):
-        t = self.Txt2Bin(self, f_in, verbose=self.verbose)
-        ret = t.run(rotate=rotate)
+    def txt2bin(self, buff, invert=None, rotate=None, flipx=False, flipy=False):
+        t = self.Txt2Bin(self, buff, verbose=self.verbose)
+        ret = t.run(rotate=rotate, flipx=flipx, flipy=flipy)
         if invert is None:
             invert = self.invert()
         if invert:
@@ -198,7 +198,24 @@ class MaskROM(object):
                     ret[(x, y)] = txtdict[(h - y - 1, x)]
             return ret
 
-        def txtbits(self, rotate=None):
+        def flipx(self, txtdict, w, h):
+            """Mirror along x axis"""
+            ret = {}
+            for y in range(h):
+                for x in range(w):
+                    ret[(x, h - y - 1)] = txtdict[(x, y)]
+            return ret
+
+        def flipy(self, txtdict, w, h):
+            """Mirror along y axis"""
+            # return txtdict
+            ret = {}
+            for y in range(h):
+                for x in range(w):
+                    ret[(w - x - 1, y)] = txtdict[(x, y)]
+            return ret
+
+        def txtbits(self, rotate=None, flipx=False, flipy=False):
             '''Return contents as char array of bits (ie string with no whitespace)'''
             assert rotate in (None, 0, 90, 180, 270)
             w, h = self.mr.txtwh()
@@ -206,8 +223,8 @@ class MaskROM(object):
             if rotate == 90 or rotate == 270:
                 wtxt, htxt = h, w
             txt = self.txt(wtxt, htxt)
+            txtdict = self.txt2dict(txt, wtxt, htxt)
             if rotate not in (None, 0):
-                txtdict = self.txt2dict(txt, wtxt, htxt)
                 if rotate == 180:
                     txtdict = self.rotate_180(txtdict, wtxt, htxt)
                 elif rotate == 90:
@@ -218,22 +235,21 @@ class MaskROM(object):
                     wtxt, htxt = htxt, wtxt
                 else:
                     assert 0
-                txt = self.dict2txt(txtdict, wtxt, htxt)
-            return txt
+            if flipx:
+                txtdict = self.flipx(txtdict, wtxt, htxt)
+            if flipy:
+                txtdict = self.flipy(txtdict, wtxt, htxt)
+            return txtdict
 
         # Default impl based off of oi2rc()
-        def run(self, rotate=None):
+        def run(self, rotate=None, flipx=False, flipy=False):
             self.buff_out = bytearray()
-            bits = self.txtbits(rotate=rotate)
-            cols, rows = self.mr.txtwh()
-
-            def get(c, r):
-                if r >= rows or c >= cols:
-                    raise ValueError("Bad row/col")
-                return bits[r * cols + c]
-
+            # (col, row) to "1" or "0"
+            txtdict = self.txtbits(rotate=rotate, flipx=flipx, flipy=flipy)
+            # Existing col, row selections
             crs = {}
-            for offset in range(self.mr.bytes()):
+
+            def next_byte():
                 byte = 0
                 for maski in range(8):
                     c, r = self.mr.oi2cr(offset, maski)
@@ -242,11 +258,14 @@ class MaskROM(object):
                         raise Exception(
                             "Duplicate c=%d, r=%d: (o %d, i %d) vs (o %d, i %d)"
                             % (c, r, offset, maski, offset2, maski2))
-                    bit = get(c, r)
+                    bit = txtdict[(c, r)]
                     if bit == '1':
                         byte |= 1 << maski
                     crs[(c, r)] = (offset, maski)
-                self.buff_out.append(byte)
+                return byte
+
+            for offset in range(self.mr.bytes()):
+                self.buff_out.append(next_byte())
             return self.buff_out
 
     class Bin2Txt(object):
