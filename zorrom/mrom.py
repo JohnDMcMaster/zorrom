@@ -113,9 +113,7 @@ class MaskROM(object):
         return self.oi2cr(offset, mask_b2i(maskb))
 
     def parse_txt(self, txt):
-        f_out = BytesIO()
-        self.txt2bin(StringIO(txt), f_out)
-        self.binary = f_out.getvalue()
+        self.binary = self.txt2bin(StringIO(txt))
 
     def parse_bin(self, bin):
         assert len(bin) == self.bytes()

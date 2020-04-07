@@ -63,8 +63,12 @@ def bitmap(mrl, mrr, fn_out):
                 offset, maskb = mrl.cr2ob(col, row)
                 assert offset < mrl.bytes()
                 assert maskb < 0x100, maskb
-                b1 = bool(mrl.binary[offset] & maskb)
-                b2 = bool(mrr.binary[offset] & maskb)
+                try:
+                    b1 = bool(mrl.binary[offset] & maskb)
+                    b2 = bool(mrr.binary[offset] & maskb)
+                except:
+                    print("Bad binary offset 0x%04X, have %u, %u" % (offset, len(mrl.binary), len(mrr.binary)))
+                    raise
             except KeyError:
                 # Not all positions actually map to binary
                 c = color_null
@@ -79,48 +83,61 @@ def bitmap(mrl, mrr, fn_out):
                     else:
                         c = color_0
             im.putpixel((col, row), c)
-    im.save(fn_out)
+    if fn_out:
+        im.save(fn_out)
     # (row, col, b1, b2)
     return diffs
 
-def load_file(fn, arch, txt=False):
+def load_file(fn, arch, bin=False, txt=False):
     mr = archs.get_arch(arch)
+
+    if not bin and not txt:
+        txt = fn.find(".txt") >= 0
+
     if txt:
+        print("Load %s txt" % fn)
         mr.parse_txt(open(fn, 'r').read())
     else:
+        print("Load %s bin" % fn)
         mr.parse_bin(open(fn, 'rb').read())
     return mr
 
-def run(arch, rom1_fn, rom2_fn, fn_out, monkey_fn=None, annotate=None, txt=False):
-    mrl = load_file(rom1_fn, arch, txt=txt)
-    mrr = load_file(rom2_fn, arch, txt=txt)
+def run(arch, rom_fns, fn_out, monkey_fn=None, annotate=None, bin=False, txt=False):
+    mrs = [load_file(fn, arch, bin=bin, txt=txt) for fn in rom_fns]
 
     print('Converting to image layout...')
     dir_out = 'romdiff'
     if not os.path.exists(dir_out):
         os.mkdir(dir_out)
 
-    # (row, col, b1, b2)
-    diffs = bitmap(mrl, mrr, fn_out)
+    mrl = mrs[0]
 
-    for diff in sorted(diffs):
-        row, col, b1, b2 = diff
-        print('x%d, y%d, L: %d, R: %d' % (col, row, b1, b2))
-        off, maskb = mrl.cr2ob(col, row)
-        print('  Offset 0x%04X, mask 0x%02X' % (off, maskb))
-        vg_col = col / 8
-        vl_col = col % 8
-        vg_row = row / 8
-        vl_row = row % 8
-        if monkey_fn:
-            print(
-                '  http://cs.sipr0n.org/static/%s/%s_%02d_%02d.png @ col %d, row %d'
-                % (monkey_fn, monkey_fn, vg_col, vg_row, vl_col, vl_row))
-    print("Bits: %u" % len(diffs))
+    all_diffs = []
+    for fn, mrr in zip(rom_fns[1:], mrs[1:]):
+        print("")
+        print(fn)
+        # (row, col, b1, b2)
+        diffs = bitmap(mrl, mrr, fn_out)
+        all_diffs += diffs
+
+        for diff in sorted(diffs):
+            row, col, b1, b2 = diff
+            print('x%d, y%d, L: %d, R: %d' % (col, row, b1, b2))
+            off, maskb = mrl.cr2ob(col, row)
+            print('  Offset 0x%04X, mask 0x%02X' % (off, maskb))
+            vg_col = col / 8
+            vl_col = col % 8
+            vg_row = row / 8
+            vl_row = row % 8
+            if monkey_fn:
+                print(
+                    '  http://cs.sipr0n.org/static/%s/%s_%02d_%02d.png @ col %d, row %d'
+                    % (monkey_fn, monkey_fn, vg_col, vg_row, vl_col, vl_row))
+        print("Bits: %u" % len(diffs))
 
     if annotate:
         j = {}
-        for diff in diffs:
+        for diff in all_diffs:
             row, col, b1, b2 = diff
             j["%u,%u" % (col, row)] = {}
         json.dump(j,
@@ -137,26 +154,25 @@ if __name__ == '__main__':
     )
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
     parser.add_argument('--arch', help='Decoder to use (required)')
+    add_bool_arg(parser, '--bin', help='Force .bin files in')
     add_bool_arg(parser, '--txt', help='Expect .txt intead of .bin files in')
+    parser.add_argument('--out',
+                        nargs='?',
+                        default=None,
+                        help='Output image file name')
     parser.add_argument('--annotate', help='Output rompar annotate JSON')
     parser.add_argument('--monkey-fn',
                         default=None,
                         help='Monkey URL reference. Ex: sega_315-5677_xpol')
-    parser.add_argument('rom1', help='ROM1 file name')
-    parser.add_argument('rom2', help='ROM2 file name')
-    parser.add_argument('out',
-                        nargs='?',
-                        default=None,
-                        help='Output file name')
+    parser.add_argument('master_rom', help='ROM1 file name')
+    parser.add_argument('roms', nargs='+', help='ROM2+ file name')
     args = parser.parse_args()
 
     fn_out = args.out
-    if not fn_out:
-        fn_out = 'out.png'
     run(args.arch,
-        rom1_fn=args.rom1,
-        rom2_fn=args.rom2,
+        rom_fns=([args.master_rom] + args.roms),
         fn_out=fn_out,
         monkey_fn=args.monkey_fn,
         annotate=args.annotate,
+        bin=args.bin,
         txt=args.txt)
