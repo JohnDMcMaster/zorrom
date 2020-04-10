@@ -124,6 +124,16 @@ class MaskROM(object):
         offset, maskb = self.cr2ob(col, row)
         return bool(self.binary[offset] & maskb)
 
+    def iter_oi(self):
+        for offset in range(self.bytes()):
+            for maski in range(8):
+                yield offset, maski
+
+    def iter_ob(self):
+        for offset in range(self.bytes()):
+            for maski in range(8):
+                yield offset, 1 << maski
+
     def txt2bin(self, buff, invert=None, rotate=None, flipx=False, flipy=False):
         t = self.Txt2Bin(self, buff, verbose=self.verbose)
         ret = t.run(rotate=rotate, flipx=flipx, flipy=flipy)
