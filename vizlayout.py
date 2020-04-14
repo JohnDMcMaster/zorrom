@@ -27,19 +27,28 @@ class Window(QMainWindow):
 
         self.mr = archs.get_arch(arch)
         self.ticks = 0
+        self.rate = 1
+        self.halfway = False
 
 
         def timer_chain():
             self.timer = QTimer()
             self.timer.timeout.connect(self.tick)
-            self.timer.start(10)
+            self.timer.start(100)
         self.timer = QTimer()
         self.timer.timeout.connect(timer_chain)
-        self.timer.start(10000)
+        # self.timer.start(10000)
+        self.timer.start(1)
 
 
     def tick(self):
-        self.ticks += 20
+        half = 8 * self.mr.bytes() / 2
+        self.ticks += int(self.rate)
+        if self.ticks >= half and not self.halfway:
+            self.ticks = half
+            self.rate = 0.5
+            self.halfway = True
+        self.rate += self.rate * 0.1 + 0.02
         # print('tick %u' % self.ticks)
         self.repaint()
 
@@ -62,6 +71,11 @@ class Window(QMainWindow):
         for biti, (off, maski) in enumerate(self.mr.iter_oi()):
             if biti >= self.ticks:
                 break
+            if maski == 0:
+                painter.setBrush(QBrush(Qt.blue, Qt.SolidPattern))
+            else:
+                painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
+
             col, row = self.mr.oi2cr(off, maski)
             x = x0 + col * pitchx
             y = y0 + row * pitchy
