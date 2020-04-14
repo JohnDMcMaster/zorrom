@@ -71,7 +71,7 @@ class MaskROM(object):
 
     def bytes(self):
         '''Assumes word in bytes for now. Assumes no parity bits'''
-        w, h = MaskROM.txtwh()
+        w, h = self.txtwh()
         bits = w * h
         if bits % 8 != 0:
             raise Exception("Irregular layout")
