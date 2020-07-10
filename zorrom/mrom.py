@@ -18,20 +18,44 @@ class InvalidData(Exception):
 def mask_b2i(maskb):
     '''Convert bitmask to bit number'''
     return {
-        0x80: 7,
-        0x40: 6,
-        0x20: 5,
-        0x10: 4,
-        0x08: 3,
-        0x04: 2,
-        0x02: 1,
-        0x01: 0,
+        0x80000000: 31,
+        0x40000000: 30,
+        0x20000000: 29,
+        0x10000000: 28,
+        0x08000000: 27,
+        0x04000000: 26,
+        0x02000000: 25,
+        0x01000000: 24,
+        0x00800000: 23,
+        0x00400000: 22,
+        0x00200000: 21,
+        0x00100000: 20,
+        0x00080000: 19,
+        0x00040000: 18,
+        0x00020000: 17,
+        0x00010000: 16,
+        0x00008000: 15,
+        0x00004000: 14,
+        0x00002000: 13,
+        0x00001000: 12,
+        0x00000800: 11,
+        0x00000400: 10,
+        0x00000200: 9,
+        0x00000100: 8,
+        0x00000080: 7,
+        0x00000040: 6,
+        0x00000020: 5,
+        0x00000010: 4,
+        0x00000008: 3,
+        0x00000004: 2,
+        0x00000002: 1,
+        0x00000001: 0,
     }[maskb]
 
 
 def mask_i2b(maski):
     '''Convert bit number to bitmask'''
-    assert 0 <= maski <= 7
+    assert 0 <= maski <= 31
     return 1 << maski
 
 
@@ -55,6 +79,23 @@ class MaskROM(object):
         return 'Unspecified'
 
     @staticmethod
+    def bitwidth(self):
+        '''
+        Return number of bits in a word.  Default to 8
+        '''
+        return 8
+
+    @staticmethod
+    def bitmask(self):
+        '''
+        Return bitmask available for words
+        '''
+        mask = 0
+        for i in range (self.mr.bitwidth(self)):
+            mask |= 1<<i
+        return mask
+
+    @staticmethod
     def txtwh(self):
         '''
         Return expected txt file width/height in the canonical orientation
@@ -70,12 +111,13 @@ class MaskROM(object):
         return (), ()
 
     def bytes(self):
-        '''Assumes word in bytes for now. Assumes no parity bits'''
+        '''Assumes no parity bits'''
         w, h = self.txtwh()
         bits = w * h
-        if bits % 8 != 0:
-            raise Exception("Irregular layout")
-        return bits // 8
+        # test removed as now supports non 8 bit words.
+        #if bits % 8 != 0:
+        #    raise Exception("Irregular layout")
+        return bits // self.bitwidth(self)
 
     @staticmethod
     def invert(self):
@@ -89,7 +131,7 @@ class MaskROM(object):
     def reindex(self):
         self.map_cr2boi = {}
         for offset in range(self.bytes()):
-            for maski in range(8):
+            for maski in range(self.bitwidth(self)):
                 col, row = self.oi2cr(offset, maski)
                 self.map_cr2boi[(col, row)] = offset, maski
         assert len(self.map_cr2boi) != 0
@@ -137,11 +179,14 @@ class MaskROM(object):
     def txt2bin(self, buff, invert=None, rotate=None, flipx=False, flipy=False):
         t = self.Txt2Bin(self, buff, verbose=self.verbose)
         ret = t.run(rotate=rotate, flipx=flipx, flipy=flipy)
-        if invert is None:
-            invert = self.invert()
-        if invert:
-            ret = bytearray([x ^ 0xFF for x in ret])
-        assert self.bytes() == len(ret), "Expected %u bytes, got %u"  % (self.bytes(), len(ret))
+        # invert needs to be before splitting into byte array.  moved to run() in Txt2Bin
+        #if invert is None:
+        #    invert = self.invert()
+        #if invert:
+        #    ret = bytearray([x ^ 0xFF for x in ret])
+        
+        # test removed as it assumes a word is 8 bits.
+        #assert self.bytes() == len(ret), "Expected %u bytes, got %u"  % (self.bytes(), len(ret))
         return ret
 
     def bin2txt(self, f_in, f_out):
@@ -259,7 +304,7 @@ class MaskROM(object):
 
             def next_byte():
                 byte = 0
-                for maski in range(8):
+                for maski in range(self.mr.bitwidth(self)):
                     c, r = self.mr.oi2cr(offset, maski)
                     if (c, r) in crs:
                         offset2, maski2 = crs[(c, r)]
@@ -273,7 +318,29 @@ class MaskROM(object):
                 return byte
 
             for offset in range(self.mr.bytes()):
-                self.buff_out.append(next_byte())
+                w = next_byte()
+                if self.mr.invert():
+                    w ^= (0xffffffff & self.mr.bitmask(self))
+                if self.mr.bitwidth(self) <= 8:
+                     self.buff_out.append(w)
+                elif self.mr.bitwidth(self) <= 16:
+                     if self.mr.bigendian(self) == 0:
+                          self.buff_out.append(w & 0xff)
+                          self.buff_out.append((w>>8) & 0xff)
+                     else:
+                          self.buff_out.append((w>>8) & 0xff)
+                          self.buff_out.append(w & 0xff)
+                elif self.mr.bitwidth(self) <= 32:
+                     if self.mr.bigendian(self) == 0:
+                          self.buff_out.append(w & 0xff)
+                          self.buff_out.append((w>>8) & 0xff)
+                          self.buff_out.append((w>>16) & 0xff)
+                          self.buff_out.append((w>>24) & 0xff)
+                     else:
+                          self.buff_out.append((w>>24) & 0xff)
+                          self.buff_out.append((w>>16) & 0xff)
+                          self.buff_out.append((w>>8) & 0xff)
+                          self.buff_out.append(w & 0xff)
             return self.buff_out
 
     class Bin2Txt(object):
