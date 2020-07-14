@@ -36,5 +36,6 @@ Notes:
   * Technology: implant NOR ROM
   * Polarity: etched bit 1 (apperas darker)
   * Orientation: main decoding circuitry at left
+  * First and last column row groups are not bits (appears as 10 bits but is 8)
   * See: https://siliconpr0n.org/map/apple/pic1670-adb-turbo/s1-3-dash-15_mit20x/
 

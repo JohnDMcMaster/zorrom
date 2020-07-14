@@ -16,9 +16,17 @@ class PIC1670(mrom.MaskROM):
     def word_bits(self):
         return 13
 
+    def words(self):
+        return 0x400
+
     def txtwh(self):
         # 8 groups of 8 bits across, 13 groups of 16 bits down.
+        # 13312 bits
         return (8 * 8, 13 * 16)
+
+    def txtgroups(self):
+        # Y is somewhat oddly spaced
+        return range(8, 8 * 8, 8), range(16, 13 * 16, 32)
 
     def invert(self):
         return True
@@ -27,9 +35,10 @@ class PIC1670(mrom.MaskROM):
 
     def oi2cr(self, offset, maski):
         #logic from modemmap.cc
+        # offset *= 2
         b = 12 - maski
         col = offset & 0x3f
-        if (col & 8):
+        if col & 8:
             col ^= 7
         col ^= 0x38
         row = 0 ^ (8 if (offset & 0x200) else 0) | (4 if (

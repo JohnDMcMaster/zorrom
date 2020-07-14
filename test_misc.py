@@ -11,6 +11,9 @@ from zorrom.archs import arch2mr
 class TestCase(unittest.TestCase):
     def setUp(self):
         """Call before every test case."""
+        print("")
+        print("")
+        print(self._testMethodName)
         warnings.simplefilter("ignore", ResourceWarning)
 
     def tearDown(self):
@@ -19,11 +22,7 @@ class TestCase(unittest.TestCase):
 
     def test_txt2bin(self):
         for arch in arch2mr.keys():
-            print("")
             print("arch %s" % arch)
-            if arch == "pic1670":
-                print('fixme')
-                continue
             mrc = arch2mr[arch]
             f_in = open("test/%s.txt" % arch, 'r')
             f_out = io.BytesIO()
@@ -34,11 +33,7 @@ class TestCase(unittest.TestCase):
 
     def test_bin2txt(self):
         for arch in arch2mr.keys():
-            print("")
             print("arch %s" % arch)
-            if arch == "pic1670":
-                print('fixme')
-                continue
             mrc = arch2mr[arch]
             f_in = open("test/%s.bin" % arch, 'rb')
             f_out = io.StringIO()
@@ -48,6 +43,11 @@ class TestCase(unittest.TestCase):
 
             ref = open("test/%s.txt" % arch, 'r').read()
             got = f_out.getvalue()
+            # todo: consider being more strict on formatting
+            got = got.translate(str.maketrans('', '', ' \n\t\r'))
+            ref = ref.translate(str.maketrans('', '', ' \n\t\r'))
+            open("got.txt", "w").write(got)
+            open("ref.txt", "w").write(ref)
             assert ref == got, arch
 
 

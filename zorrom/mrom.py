@@ -273,7 +273,7 @@ class MaskROM(object):
         # Canonically stored as the binary itself
         self.binary = None
         # Allows converting between txt and binary space
-        self.map_cr2boi = None
+        self.map_cr2woi = None
         self.reindex()
         if txt:
             self.parse_txt(txt)
@@ -328,6 +328,10 @@ class MaskROM(object):
         #    raise Exception("Irregular layout")
         return bits // self.word_bits()
 
+    def bits(self):
+        """Number of actual usable bits in the binary"""
+        return self.words() * self.word_bits()
+
     def bytes(self):
         '''
         Number of bytes in a byte packed .bin which may be more than if they were stored raw
@@ -366,12 +370,18 @@ class MaskROM(object):
         return "byte"
 
     def reindex(self):
-        self.map_cr2boi = {}
-        for offset in range(self.bytes()):
+        self.map_cr2woi = {}
+        for offset in range(self.words()):
             for maski in range(self.word_bits()):
                 col, row = self.oi2cr(offset, maski)
-                self.map_cr2boi[(col, row)] = offset, maski
-        assert len(self.map_cr2boi) != 0
+                assert (
+                    col, row
+                ) not in self.map_cr2woi, "col %u, row %u already in map at (%u words %u wordi)" % (
+                    col, row, offset, maski)
+                self.map_cr2woi[(col, row)] = offset, maski
+        assert len(self.map_cr2woi) == self.bits(
+        ), "Binary has %u bits but mapping has %u bits" % (
+            self.bits(), len(self.map_cr2woi))
 
     def cr2ow(self, col, row):
         '''Given image row/col return binary (word offset, binary mask)'''
@@ -380,7 +390,7 @@ class MaskROM(object):
 
     def cr2oi(self, col, row):
         '''Given image row/col return binary (word offset, bit index)'''
-        return self.map_cr2boi[(col, row)]
+        return self.map_cr2woi[(col, row)]
 
     # You must implement one of these
     def oi2cr(self, offset, maski):
@@ -404,12 +414,12 @@ class MaskROM(object):
         return bool(self.binary[offset] & maskb)
 
     def iter_oi(self):
-        for offset in range(self.bytes()):
+        for offset in range(self.words()):
             for maski in range(8):
                 yield offset, maski
 
     def iter_ow(self):
-        for offset in range(self.bytes()):
+        for offset in range(self.words()):
             for maski in range(8):
                 yield offset, 1 << maski
 
@@ -462,7 +472,7 @@ class MaskROM(object):
             bytei = word
             bmaski = maski
         elif self.littleendian():
-            bytei = word + maski // 8
+            bytei = self.word_bytes() * word + maski // 8
             bmaski = maski % 8
         elif self.bigendian():
             assert 0, "fixme"
