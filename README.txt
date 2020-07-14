@@ -1,10 +1,10 @@
 Zorro's (mask) ROM
-Mask ROM capture utilities
+Mask ROM utilities to convert between physical and binary representation. For example, a ROM chip image typed as a 0/1s .txt file can be converted into a .bin file.
 
-This ingests .txt files with 1/0s laid out in a grid as if overload into a die photo
 Tools that can produce this format include:
--django-monkeys using tools/db2txt.py
--rompar save 
+* rompar save
+* bitract
+* django-monkeys using tools/db2txt.py
 
 # Arch
 
@@ -37,5 +37,5 @@ Notes:
   * Polarity: etched bit 1 (apperas darker)
   * Orientation: main decoding circuitry at left
   * First and last column row groups are not bits (appears as 10 bits but is 8)
-  * See: https://siliconpr0n.org/map/apple/pic1670-adb-turbo/s1-3-dash-15_mit20x/
+  * Reference: https://siliconpr0n.org/map/apple/pic1670-adb-turbo/s1-3-dash-15_mit20x/
 
