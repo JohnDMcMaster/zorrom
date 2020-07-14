@@ -21,7 +21,6 @@ class PIC1670(mrom.MaskROM):
 
     def txtwh(self):
         # 8 groups of 8 bits across, 13 groups of 16 bits down.
-        # 13312 bits
         return (8 * 8, 13 * 16)
 
     def txtgroups(self):
@@ -34,8 +33,7 @@ class PIC1670(mrom.MaskROM):
     '''Given binary (word offset, bit index) return image row/col'''
 
     def oi2cr(self, offset, maski):
-        #logic from modemmap.cc
-        # offset *= 2
+        # logic from modemmap.cc
         b = 12 - maski
         col = offset & 0x3f
         if col & 8:
