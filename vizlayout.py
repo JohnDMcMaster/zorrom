@@ -10,14 +10,14 @@ from PyQt5.QtCore import Qt
 
 import sys
 
-class Window(QMainWindow):
 
+class Window(QMainWindow):
     def __init__(self, arch):
         super().__init__()
         self.title = "PyQt5 Drawing Tutorial"
         self.verbose = 0
-        self.top= 1
-        self.left= 1
+        self.top = 1
+        self.left = 1
         self.width = 1920
         self.height = 900
         self.setWindowTitle(self.title)
@@ -30,16 +30,15 @@ class Window(QMainWindow):
         self.rate = 1
         self.halfway = False
 
-
         def timer_chain():
             self.timer = QTimer()
             self.timer.timeout.connect(self.tick)
             self.timer.start(100)
+
         self.timer = QTimer()
         self.timer.timeout.connect(timer_chain)
         # self.timer.start(10000)
         self.timer.start(1)
-
 
     def tick(self):
         half = 8 * self.mr.bytes() / 2
@@ -51,7 +50,6 @@ class Window(QMainWindow):
         self.rate += self.rate * 0.1 + 0.02
         # print('tick %u' % self.ticks)
         self.repaint()
-
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -80,7 +78,9 @@ class Window(QMainWindow):
             x = x0 + col * pitchx
             y = y0 + row * pitchy
             painter.drawRect(x, y, pitchx, pitchy)
-            self.verbose and print("0x%04X:0x%02X: %ux %uy" % (off, 1 << maski, x, y))
+            self.verbose and print("0x%04X:0x%02X: %ux %uy" %
+                                   (off, 1 << maski, x, y))
+
 
 if __name__ == "__main__":
     import argparse
@@ -93,4 +93,4 @@ if __name__ == "__main__":
 
     App = QApplication(sys.argv)
     window = Window(args.arch)
-    sys.exit(App.exec())
+    sys.exit(App. exec ())

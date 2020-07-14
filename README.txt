@@ -30,3 +30,11 @@ Notes:
   * Polarity: FIXME
   * Orientation: FIXME
 
+## pic1670 (Microchip/GI)
+
+Notes:
+  * Technology: implant NOR ROM
+  * Polarity: etched bit 1 (apperas darker)
+  * Orientation: main decoding circuitry at left
+  * See: https://siliconpr0n.org/map/apple/pic1670-adb-turbo/s1-3-dash-15_mit20x/
+

@@ -79,7 +79,7 @@ class D8041AH(mrom.MaskROM):
                 0x80: 0x40,
                 0x40: 0x80,
                 0x00: 0xC0,
-                }[oldval]
+            }[oldval]
             offset = (offset & (~fixmask)) | fixval
 
         # horrible hack 2
@@ -95,7 +95,7 @@ class D8041AH(mrom.MaskROM):
                 0x080: 0x140,
                 0x040: 0x180,
                 0x000: 0x1C0,
-                }[oldval]
+            }[oldval]
             offset = (offset & (~fixmask)) | fixval
 
         # mask 0xc
@@ -112,7 +112,7 @@ class D8041AH(mrom.MaskROM):
             1: 1,
             2: 2,
             3: 3,
-            }[col40]
+        }[col40]
         col = bitoff | colrange | col40
         row = offset % 64
         return (col, row)

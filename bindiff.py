@@ -4,6 +4,7 @@ from PIL import Image
 import argparse
 import os
 
+
 def run(verbose, rom1_fn, rom2_fn):
     rom1 = open(rom1_fn, "rb").read()
     rom2 = open(rom2_fn, "rb").read()

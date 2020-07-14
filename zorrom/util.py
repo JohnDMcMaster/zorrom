@@ -58,7 +58,7 @@ def rom_bytes2txtdict(mr, romb):
     txtw, txth = mr.txtwh()
     for col in range(txtw):
         for row in range(txth):
-            offset, maskb = mr.cr2ob(col, row)
+            offset, maskb = mr.cr2ow(col, row)
             byte = romb[offset]
             bit = int(bool(byte & maskb)) ^ 1
             ret[(col, row)] = bit

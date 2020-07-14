@@ -60,14 +60,15 @@ def bitmap(mrl, mrr, fn_out):
             try:
                 # b1 = mrl.get_cr(col, row)
                 # b2 = mrr.get_cr(col, row)
-                offset, maskb = mrl.cr2ob(col, row)
+                offset, maskb = mrl.cr2ow(col, row)
                 assert offset < mrl.bytes()
                 assert maskb < 0x100, maskb
                 try:
                     b1 = bool(mrl.binary[offset] & maskb)
                     b2 = bool(mrr.binary[offset] & maskb)
                 except:
-                    print("Bad binary offset 0x%04X, have %u, %u" % (offset, len(mrl.binary), len(mrr.binary)))
+                    print("Bad binary offset 0x%04X, have %u, %u" %
+                          (offset, len(mrl.binary), len(mrr.binary)))
                     raise
             except KeyError:
                 # Not all positions actually map to binary
@@ -88,6 +89,7 @@ def bitmap(mrl, mrr, fn_out):
     # (row, col, b1, b2)
     return diffs
 
+
 def load_file(fn, arch, bin=False, txt=False):
     mr = archs.get_arch(arch)
 
@@ -102,7 +104,14 @@ def load_file(fn, arch, bin=False, txt=False):
         mr.parse_bin(open(fn, 'rb').read())
     return mr
 
-def run(arch, rom_fns, fn_out, monkey_fn=None, annotate=None, bin=False, txt=False):
+
+def run(arch,
+        rom_fns,
+        fn_out,
+        monkey_fn=None,
+        annotate=None,
+        bin=False,
+        txt=False):
     mrs = [load_file(fn, arch, bin=bin, txt=txt) for fn in rom_fns]
 
     print('Converting to image layout...')
@@ -123,7 +132,7 @@ def run(arch, rom_fns, fn_out, monkey_fn=None, annotate=None, bin=False, txt=Fal
         for diff in sorted(diffs):
             row, col, b1, b2 = diff
             print('x%d, y%d, L: %d, R: %d' % (col, row, b1, b2))
-            off, maskb = mrl.cr2ob(col, row)
+            off, maskb = mrl.cr2ow(col, row)
             print('  Offset 0x%04X, mask 0x%02X' % (off, maskb))
             vg_col = col / 8
             vl_col = col % 8
