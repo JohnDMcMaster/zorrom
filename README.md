@@ -2,11 +2,11 @@ Zorro's (mask) ROM
 
 Mask ROM utilities to convert between physical and word representation. For example, a ROM chip image typed as a 0/1s .txt file can be converted into a .bin file.
 
-Tools that can produce this format include:
+You can generate a .txt file to convert via:
 * typing by hand
-* rompar
-* bitract
-* django-monkeys (tools/db2txt.py)
+* rompar: https://github.com/AdamLaurie/rompar
+* bitract: https://github.com/SiliconAnalysis/bitract/
+* django-monkeys: https://github.com/andrew-gardner/django-monkeys/blob/master/tools/db2txt.py
 
 # Arch
 
