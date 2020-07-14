@@ -11,22 +11,18 @@ Think MB86233/MB86234 is the same layout
 
 
 class MB8623x(mrom.MaskROM):
-    @staticmethod
     def desc(self):
         return 'Fujitsu MB86233/MB86234'
 
-    @staticmethod
-    def txtwh():
+    def txtwh(self):
         return (32 * 8, 32 * 8)
 
-    @staticmethod
-    def txtgroups():
+    def txtgroups(self):
         # Use monkey convention breaking on groups of 8
         # Actual has no col breaks and every second row break is larger
         return range(8, 32 * 8, 8), range(8, 32 * 8, 8)
 
-    @staticmethod
-    def invert():
+    def invert(self):
         return True
 
     def oi2cr(self, offset, maski):

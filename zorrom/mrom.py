@@ -131,11 +131,12 @@ def td_rotate(rotate, txtdict, wtxt, htxt):
 
 
 class Bin2Txt(object):
-    def __init__(self, mr, f_in, f_out, verbose=False):
+    def __init__(self, mr, f_in, f_out, verbose=False, defchar='X'):
         self.mr = mr
         self.f_in = f_in
         self.f_out = f_out
         self.verbose = verbose
+        self.defchar = defchar
 
     # Default impl based off of oi2rc()
     def run(self):
@@ -144,8 +145,8 @@ class Bin2Txt(object):
         dbytes = bytearray(self.f_in.read())
         if self.verbose:
             print('Bytes: %d' % len(dbytes))
-        if len(dbytes) != self.mr.bytes():
-            raise Exception()
+        assert len(dbytes) == self.mr.bytes(), "Expect %u bytes, got %u" % (
+            self.mr.bytes(), len(dbytes))
         cols, rows = self.mr.txtwh()
         gcols, grows = self.mr.txtgroups()
         gcols = list(gcols)
@@ -174,11 +175,13 @@ class Bin2Txt(object):
                 while col in agcols:
                     self.f_out.write(' ')
                     agcols.remove(col)
-                bit = bits.get((col, row), 'X')
-                if bit == 'X':
+                bit = bits.get((col, row), self.defchar)
+                """
+                if bit == self.defchar:
                     # TODO: add some sort of error flag
                     # For now good for debugging
                     pass
+                """
                 self.f_out.write(bit)
             # Newline afer every row
             self.f_out.write('\n')
@@ -422,8 +425,8 @@ class MaskROM(object):
             ret), "Expected %u bytes, got %u" % (self.bytes(), len(ret))
         return ret
 
-    def bin2txt(self, f_in, f_out):
-        t = Bin2Txt(self, f_in, f_out, verbose=self.verbose)
+    def bin2txt(self, f_in, f_out, defchar="X"):
+        t = Bin2Txt(self, f_in, f_out, verbose=self.verbose, defchar=defchar)
         t.run()
 
     def append_word(self, buf, w):

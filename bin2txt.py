@@ -23,7 +23,7 @@ class InvFile(object):
         self.f.write(data)
 
 
-def run(arch, fn_in, fn_out, invert=None, verbose=False):
+def run(arch, fn_in, fn_out, invert=None, verbose=False, defchar="X"):
     try:
         mrc = arch2mr[arch]
     except KeyError:
@@ -37,7 +37,7 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
         f_out = InvFile(f_out)
 
     mr = mrc(verbose=verbose)
-    mr.bin2txt(f_in, f_out)
+    mr.bin2txt(f_in, f_out, defchar=defchar)
 
 
 def list_arch():
@@ -45,7 +45,7 @@ def list_arch():
         print(a)
 
 
-if __name__ == "__main__":
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -53,6 +53,9 @@ if __name__ == "__main__":
     parser.add_argument('--verbose', action='store_true', help='')
     add_bool_arg(parser, '--invert', default=None, help='Default: auto')
     parser.add_argument('--arch', help='Decoder to use (required)')
+    parser.add_argument('--defchar',
+                        default="X",
+                        help="Char to use when txt bit isn't in binary")
     parser.add_argument('--list-arch',
                         action='store_true',
                         help='Extended help')
@@ -62,17 +65,22 @@ if __name__ == "__main__":
 
     if args.list_arch:
         list_arch()
-    else:
-        if not args.fn_in:
-            raise Exception("Require input file")
-        fn_out = args.fn_out
-        if not fn_out:
-            prefix, postfix = os.path.splitext(args.fn_in)
-            if not postfix:
-                raise Exception("Can't auto name output file")
-            fn_out = prefix + '.bin'
-        run(args.arch,
-            args.fn_in,
-            fn_out,
-            invert=args.invert,
-            verbose=args.verbose)
+        return
+    if not args.fn_in:
+        raise Exception("Require input file")
+    fn_out = args.fn_out
+    if not fn_out:
+        prefix, postfix = os.path.splitext(args.fn_in)
+        if not postfix:
+            raise Exception("Can't auto name output file")
+        fn_out = prefix + '.bin'
+    run(args.arch,
+        args.fn_in,
+        fn_out,
+        invert=args.invert,
+        verbose=args.verbose,
+        defchar=args.defchar)
+
+
+if __name__ == "__main__":
+    main()

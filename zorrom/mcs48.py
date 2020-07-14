@@ -9,12 +9,10 @@ NEC D8041AH
 
 
 class D8041AH(mrom.MaskROM):
-    @staticmethod
     def desc(self):
         return 'NEC D8041AH'
 
-    @staticmethod
-    def txtwh():
+    def txtwh(self):
         '''
         Layout
         -Orientation: decode logic down/right / NEC logo left
@@ -24,16 +22,14 @@ class D8041AH(mrom.MaskROM):
         '''
         return (128, 66)
 
-    def bytes(self):
+    def words(self):
         return 128 * 64 // 8
 
-    @staticmethod
-    def txtgroups():
+    def txtgroups(self):
         # Take literal image layout with no extra breaks
         return (), range(1, 66, 2)
 
-    @staticmethod
-    def invert():
+    def invert(self):
         '''
         Actual: bit with extra circle contact => 0
         Convention: xpol bright (ie circle => 0) recorded as 1
@@ -132,20 +128,16 @@ Intersil M5L8042
 
 
 class M5L8042(mrom.MaskROM):
-    @staticmethod
     def desc(self):
         return 'Mitsubishi M5L8042'
 
-    @staticmethod
-    def txtwh():
+    def txtwh(self):
         return (16 * 8, 16 * 8)
 
-    @staticmethod
-    def txtgroups():
+    def txtgroups(self):
         return range(8, 16 * 8, 8), range(2, 64 * 2, 2)
 
-    @staticmethod
-    def invert():
+    def invert(self):
         return False
 
     def oi2cr(self, offset, maski):
