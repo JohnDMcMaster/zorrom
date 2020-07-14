@@ -5,7 +5,15 @@ import os
 from zorrom.util import add_bool_arg
 from zorrom.archs import arch2mr
 
-def run(arch, fn_in, fn_out, invert=None, rotate=None, flipx=False, flipy=False, verbose=False):
+
+def run(arch,
+        fn_in,
+        fn_out,
+        invert=None,
+        rotate=None,
+        flipx=False,
+        flipy=False,
+        verbose=False):
     try:
         mrc = arch2mr[arch]
     except KeyError:
@@ -15,8 +23,13 @@ def run(arch, fn_in, fn_out, invert=None, rotate=None, flipx=False, flipy=False,
     # There might be partial word conventions
 
     mr = mrc(verbose=verbose)
-    out_buff = mr.txt2bin(f_in, invert=invert, rotate=rotate, flipx=flipx, flipy=flipy)
+    out_buff = mr.txt2bin(f_in,
+                          invert=invert,
+                          rotate=rotate,
+                          flipx=flipx,
+                          flipy=flipy)
     open(fn_out, "wb").write(out_buff)
+
 
 def list_arch():
     for a in arch2mr.keys():
@@ -34,9 +47,16 @@ if __name__ == "__main__":
     parser.add_argument('--list-arch',
                         action='store_true',
                         help='Extended help')
-    parser.add_argument('--rotate', type=int, default=None, help='Rotate clockwise 90, 180, or 270 degrees')
-    parser.add_argument('--flipx', action="store_true", help='Mirror along x axis')
-    parser.add_argument('--flipy', action="store_true", help='Mirror along y axis')
+    parser.add_argument('--rotate',
+                        type=int,
+                        default=None,
+                        help='Rotate clockwise 90, 180, or 270 degrees')
+    parser.add_argument('--flipx',
+                        action="store_true",
+                        help='Mirror along x axis')
+    parser.add_argument('--flipy',
+                        action="store_true",
+                        help='Mirror along y axis')
     parser.add_argument('fn_in', nargs='?', help='.txt file in')
     parser.add_argument('fn_out', nargs='?', help='.bin file out')
     args = parser.parse_args()
