@@ -28,11 +28,11 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
         mrc = arch2mr[arch]
     except KeyError:
         raise Exception("Invalid architecture %s. Try --list-arch" % arch)
-    f_in = open(fn_in, 'r')
-    f_out = open(fn_out, "wb")
+    f_in = open(fn_in, 'rb')
+    f_out = open(fn_out, "w")
 
-    if invert is None:
-        invert = mrc.invert()
+    #if invert is None:
+    #    invert = mrc.invert()
     if invert:
         f_out = InvFile(f_out)
 
@@ -42,7 +42,7 @@ def run(arch, fn_in, fn_out, invert=None, verbose=False):
 
 def list_arch():
     for a in arch2mr.keys():
-        print a
+        print(a)
 
 
 if __name__ == "__main__":

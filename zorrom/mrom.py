@@ -152,13 +152,15 @@ class Bin2Txt(object):
         grows = list(grows)
 
         # Build bit state
-        for offset in range(self.mr.bytes()):
-            for maski in range(8):
-                c, r = self.mr.oi2cr(offset, maski)
+        for word in range(self.mr.words()):
+            for maski in range(self.mr.word_bits()):
+                c, r = self.mr.oi2cr(word, maski)
                 if c >= cols or r >= rows:
                     raise Exception('Bad c %d, r %d from off %d, maski %d' %
-                                    (c, r, offset, maski))
-                bit = '1' if (dbytes[offset] & (1 << maski)) else '0'
+                                    (c, r, word, maski))
+                bit = self.mr.get_bytearray_bit(dbytes, word, maski)
+                if self.mr.invert():
+                    bit = {'0': '1', '1': '0'}[bit]
                 bits[(c, r)] = bit
 
         # Now write it nicely formatted
@@ -256,33 +258,8 @@ class Txt2Bin(object):
             word = next_word()
             if self.mr.invert():
                 word ^= self.mr.bitmask()
-            self.append_word(word)
+            self.mr.append_word(self.buff_out, word)
         return self.buff_out
-
-    # TODO: move to mr as word2bytes()
-    def append_word(self, w):
-        if self.mr.word_bits() <= 8:
-            self.buff_out.append(w)
-        elif self.mr.word_bits() <= 16:
-            if self.mr.bigendian():
-                self.buff_out.append((w >> 8) & 0xff)
-                self.buff_out.append(w & 0xff)
-            else:
-                self.buff_out.append(w & 0xff)
-                self.buff_out.append((w >> 8) & 0xff)
-        elif self.mr.word_bits() <= 32:
-            if self.mr.bigendian():
-                self.buff_out.append((w >> 24) & 0xff)
-                self.buff_out.append((w >> 16) & 0xff)
-                self.buff_out.append((w >> 8) & 0xff)
-                self.buff_out.append(w & 0xff)
-            else:
-                self.buff_out.append(w & 0xff)
-                self.buff_out.append((w >> 8) & 0xff)
-                self.buff_out.append((w >> 16) & 0xff)
-                self.buff_out.append((w >> 24) & 0xff)
-        else:
-            assert 0, "Unsupported word size %u" % self.mr.word_bits()
 
 
 class MaskROM(object):
@@ -448,3 +425,45 @@ class MaskROM(object):
     def bin2txt(self, f_in, f_out):
         t = Bin2Txt(self, f_in, f_out, verbose=self.verbose)
         t.run()
+
+    def append_word(self, buf, w):
+        """
+        buf: bytearray
+        w: word
+        """
+        if self.word_bits() <= 8:
+            buf.append(w)
+        elif self.word_bits() <= 16:
+            if self.bigendian():
+                buf.append((w >> 8) & 0xff)
+                buf.append(w & 0xff)
+            else:
+                buf.append(w & 0xff)
+                buf.append((w >> 8) & 0xff)
+        elif self.word_bits() <= 32:
+            if self.bigendian():
+                buf.append((w >> 24) & 0xff)
+                buf.append((w >> 16) & 0xff)
+                buf.append((w >> 8) & 0xff)
+                buf.append(w & 0xff)
+            else:
+                buf.append(w & 0xff)
+                buf.append((w >> 8) & 0xff)
+                buf.append((w >> 16) & 0xff)
+                buf.append((w >> 24) & 0xff)
+        else:
+            assert 0, "Unsupported word size %u" % self.word_bits()
+
+    def get_bytearray_bit(self, buf, word, maski):
+        if self.word_bits() <= 8:
+            bytei = word
+            bmaski = maski
+        elif self.littleendian():
+            bytei = word + maski // 8
+            bmaski = maski % 8
+        elif self.bigendian():
+            assert 0, "fixme"
+        else:
+            assert 0, "Unsupported word size %u" % self.word_bits()
+
+        return '1' if (buf[bytei] & (1 << bmaski)) else '0'
