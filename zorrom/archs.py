@@ -2,6 +2,7 @@ from zorrom import mcs48
 from zorrom import mb8623x
 #from zorrom import snes
 from zorrom import pic1670
+from zorrom import lc5800
 
 arch2mr = {
     'd8041ah': mcs48.D8041AH,
@@ -10,6 +11,7 @@ arch2mr = {
     'pic1670': pic1670.PIC1670,
     #'snes_cic': snes.SnesCIC,
     #'snes_pif': snes.SnesPIF,
+    'lc5800': lc5800.LC5800,
 }
 
 
