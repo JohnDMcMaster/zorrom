@@ -69,7 +69,7 @@ def txt2dict(txt, w, h):
     return ret
 
 
-def dict2txt(self, txtdict, w, h):
+def dict2txt(txtdict, w, h):
     ret = ""
     for y in range(h):
         for x in range(w):
@@ -85,13 +85,22 @@ def td_rotate_180(txtdict, w, h):
     return ret
 
 
-def td_rotate_90(txtdict, w, h):
+def td_rotate_90ccw(txtdict, wout, hout):
+    """Rotate 90 CCW"""
     # y: x
     # x: w - y - 1
     ret = {}
-    for y in range(h):
-        for x in range(w):
-            ret[(x, y)] = txtdict[(h - y - 1, x)]
+    for y in range(hout):
+        for x in range(wout):
+            xin = hout - y - 1
+            yin = x
+            try:
+                val = txtdict[(xin, yin)]
+            except KeyError:
+                raise KeyError(
+                    "out %uw x %u h: %ux, %uy out => invalid %ux, %uy in" %
+                    (wout, hout, x, y, xin, yin))
+            ret[(x, y)] = val
     return ret
 
 
@@ -114,6 +123,15 @@ def td_flipy(txtdict, w, h):
     return ret
 
 
+def td_invert(txtdict, w, h):
+    ret = {}
+    for y in range(h):
+        for x in range(w):
+            c = txtdict[(x, y)]
+            ret[(x, y)] = {"0": "1", "1": "0"}.get(c, c)
+    return ret
+
+
 def td_rotate(rotate, txtdict, wtxt, htxt):
     """
     w/h referenced to output
@@ -121,13 +139,39 @@ def td_rotate(rotate, txtdict, wtxt, htxt):
     if rotate == 180:
         txtdict = td_rotate_180(txtdict, wtxt, htxt)
     elif rotate == 90:
-        txtdict = td_rotate_90(txtdict, wtxt, htxt)
+        txtdict = td_rotate_180(txtdict, htxt, wtxt)
+        txtdict = td_rotate_90ccw(txtdict, wtxt, htxt)
         wtxt, htxt = htxt, wtxt
     elif rotate == 270:
-        txtdict = td_rotate_90(txtdict, wtxt, htxt)
+        txtdict = td_rotate_90ccw(txtdict, wtxt, htxt)
         wtxt, htxt = htxt, wtxt
     else:
         assert 0
+    return txtdict
+
+
+def save_txt(f_out, bits, cols, rows, grows=[], gcols=[], defchar="?"):
+    # Now write it nicely formatted
+    for row in range(rows):
+        # Put a space between row gaps
+        while row in grows:
+            f_out.write('\n')
+            grows.remove(row)
+        agcols = list(gcols)
+        for col in range(cols):
+            while col in agcols:
+                f_out.write(' ')
+                agcols.remove(col)
+            bit = bits.get((col, row), defchar)
+            """
+            if bit == self.defchar:
+                # TODO: add some sort of error flag
+                # For now good for debugging
+                pass
+            """
+            f_out.write(bit)
+        # Newline afer every row
+        f_out.write('\n')
 
 
 class Bin2Txt(object):
@@ -164,27 +208,38 @@ class Bin2Txt(object):
                     bit = {'0': '1', '1': '0'}[bit]
                 bits[(c, r)] = bit
 
-        # Now write it nicely formatted
-        for row in range(rows):
-            # Put a space between row gaps
-            while row in grows:
-                self.f_out.write('\n')
-                grows.remove(row)
-            agcols = list(gcols)
-            for col in range(cols):
-                while col in agcols:
-                    self.f_out.write(' ')
-                    agcols.remove(col)
-                bit = bits.get((col, row), self.defchar)
-                """
-                if bit == self.defchar:
-                    # TODO: add some sort of error flag
-                    # For now good for debugging
-                    pass
-                """
-                self.f_out.write(bit)
-            # Newline afer every row
-            self.f_out.write('\n')
+        save_txt(self.f_out,
+                 bits,
+                 cols,
+                 rows,
+                 grows=grows,
+                 gcols=gcols,
+                 defchar=self.defchar)
+
+
+# todo: break out as global util?
+def load_txt(f_in, w, h):
+    '''Read input file, checking format and stripping everything not 01 '''
+    ret = ''
+    lines = 0
+    for linei, l in enumerate(f_in):
+        l = l.strip().replace(' ', '')
+        if not l:
+            continue
+        if w is None:
+            w = len(l)
+        if len(l) != w:
+            raise InvalidData('Line %s want length %d, got %d' %
+                              (linei, w, len(l)))
+        if l.replace('1', '').replace('0', ''):
+            raise InvalidData('Line %s unexpected char' % linei)
+        ret += l
+        lines += 1
+    if h is None:
+        h = lines
+    if lines != h:
+        raise InvalidData('Want %d lines, got %d' % (h, lines))
+    return ret, w, h
 
 
 class Txt2Bin(object):
@@ -194,26 +249,6 @@ class Txt2Bin(object):
         self.buff_out = None
         self.verbose = verbose
 
-    # todo: break out as global util?
-    def txt(self, w, h):
-        '''Read input file, checking format and stripping everything not 01 '''
-        ret = ''
-        lines = 0
-        for linei, l in enumerate(self.f_in):
-            l = l.strip().replace(' ', '')
-            if not l:
-                continue
-            if len(l) != w:
-                raise InvalidData('Line %s want length %d, got %d' %
-                                  (linei, w, len(l)))
-            if l.replace('1', '').replace('0', ''):
-                raise InvalidData('Line %s unexpected char' % linei)
-            ret += l
-            lines += 1
-        if lines != h:
-            raise InvalidData('Want %d lines, got %d' % (h, lines))
-        return ret
-
     def txtbits(self, rotate=None, flipx=False, flipy=False):
         '''Return contents as char array of bits (ie string with no whitespace)'''
         assert rotate in (None, 0, 90, 180, 270)
@@ -221,7 +256,7 @@ class Txt2Bin(object):
         wtxt, htxt = w, h
         if rotate == 90 or rotate == 270:
             wtxt, htxt = h, w
-        txt = self.txt(wtxt, htxt)
+        txt, _w, _h = load_txt(self.f_in, wtxt, htxt)
         txtdict = txt2dict(txt, wtxt, htxt)
         if rotate not in (None, 0):
             txtdict = td_rotate(rotate, txtdict, wtxt, htxt)
