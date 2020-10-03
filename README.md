@@ -40,7 +40,7 @@ Say a character ROM was photographed and converted (say by hand) to produce a bi
 1011011001110111
 ```
 
-This ".txt" gives a ROM physical layout of 12 rows by 8 columns. Conventons:
+This ".txt" gives a ROM physical layout of 16 rows by 8 columns. Conventons:
   * ROMs are usually oriented to be wider than high to fit on desktop monitors better
   * You may not know what bit is 0 vs 1 initially. Choose a convention arbitrarily and document it. That said, people usually choose the brighter bit as "0"
 
