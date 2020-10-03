@@ -29,6 +29,9 @@ class TestCase(unittest.TestCase):
             mr = mrc()
             got = mr.txt2bin(f_in, f_out)
             ref = open("test/%s.bin" % arch, 'rb').read()
+            # print(type(got), len(got), type(ref), len(ref))
+            open("test/got.bin", "wb").write(got)
+            open("test/ref.bin", "wb").write(ref)
             assert ref == got, arch
 
     def test_bin2txt(self):
@@ -46,8 +49,8 @@ class TestCase(unittest.TestCase):
             # todo: consider being more strict on formatting
             got = got.translate(str.maketrans('', '', ' \n\t\r'))
             ref = ref.translate(str.maketrans('', '', ' \n\t\r'))
-            open("got.txt", "w").write(got)
-            open("ref.txt", "w").write(ref)
+            open("test/got.txt", "w").write(got)
+            open("test/ref.txt", "w").write(ref)
             assert ref == got, arch
 
 

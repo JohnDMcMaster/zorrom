@@ -249,7 +249,7 @@ class Txt2Bin(object):
         self.buff_out = None
         self.verbose = verbose
 
-    def txtbits(self, rotate=None, flipx=False, flipy=False):
+    def txtbits(self, rotate=None, flipx=False, flipy=False, invert=None):
         '''Return contents as char array of bits (ie string with no whitespace)'''
         assert rotate in (None, 0, 90, 180, 270)
         w, h = self.mr.txtwh()
@@ -267,10 +267,10 @@ class Txt2Bin(object):
         return txtdict
 
     # Default impl based off of oi2rc()
-    def run(self, rotate=None, flipx=False, flipy=False):
+    def run(self, rotate=None, flipx=False, flipy=False, invert=None):
         self.buff_out = bytearray()
         # (col, row) to "1" or "0"
-        txtdict = self.txtbits(rotate=rotate, flipx=flipx, flipy=flipy)
+        txtdict = self.txtbits(rotate=rotate, flipx=flipx, flipy=flipy, invert=invert)
         # Existing col, row selections
         crs = {}
         w, h = self.mr.txtwh()
@@ -465,7 +465,7 @@ class MaskROM(object):
                 flipx=False,
                 flipy=False):
         t = Txt2Bin(self, buff, verbose=self.verbose)
-        ret = t.run(rotate=rotate, flipx=flipx, flipy=flipy)
+        ret = t.run(rotate=rotate, flipx=flipx, flipy=flipy, invert=invert)
         assert self.bytes() == len(
             ret), "Expected %u bytes, got %u" % (self.bytes(), len(ret))
         return ret
