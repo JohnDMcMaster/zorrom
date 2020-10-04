@@ -1,5 +1,6 @@
 from zorrom import mrom
 
+
 class Tutorial1(mrom.MaskROM):
     def desc(self):
         return 'Tutorial 1'

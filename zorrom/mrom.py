@@ -270,7 +270,10 @@ class Txt2Bin(object):
     def run(self, rotate=None, flipx=False, flipy=False, invert=None):
         self.buff_out = bytearray()
         # (col, row) to "1" or "0"
-        txtdict = self.txtbits(rotate=rotate, flipx=flipx, flipy=flipy, invert=invert)
+        txtdict = self.txtbits(rotate=rotate,
+                               flipx=flipx,
+                               flipy=flipy,
+                               invert=invert)
         # Existing col, row selections
         crs = {}
         w, h = self.mr.txtwh()

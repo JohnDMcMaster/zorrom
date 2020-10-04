@@ -5,7 +5,6 @@ from zorrom.util import add_bool_arg
 
 
 def munge_txt(txt,
-              fn_out,
               win,
               hin,
               rotate=None,
@@ -27,8 +26,7 @@ def munge_txt(txt,
         txtdict = mrom.td_flipy(txtdict, wout, hout)
     if invert:
         txtdict = mrom.td_invert(txtdict, wout, hout)
-    # return mrom.dict2txt(txtdict, wout, hout)
-    mrom.save_txt(open(fn_out, "w"), txtdict, wout, hout)
+    return txtdict, wout, hout
 
 
 def run(fn_in,
@@ -37,16 +35,24 @@ def run(fn_in,
         rotate=None,
         flipx=False,
         flipy=False,
+        grows=[],
+        gcols=[],
         verbose=False):
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
-    munge_txt(txtin,
-              fn_out,
-              win,
-              hin,
-              rotate=rotate,
-              flipx=flipx,
-              flipy=flipy,
-              invert=invert)
+    txtdict, wout, hout = munge_txt(txtin,
+                                    win,
+                                    hin,
+                                    rotate=rotate,
+                                    flipx=flipx,
+                                    flipy=flipy,
+                                    invert=invert)
+    # return mrom.dict2txt(txtdict, wout, hout)
+    mrom.save_txt(open(fn_out, "w"),
+                  txtdict,
+                  wout,
+                  hout,
+                  grows=grows,
+                  gcols=gcols)
 
 
 def main():
@@ -65,10 +71,26 @@ def main():
     parser.add_argument('--flipy',
                         action="store_true",
                         help='Mirror along y axis')
+    parser.add_argument('--grows', default="")
+    parser.add_argument('--grows-range', default="")
+    parser.add_argument('--gcols', default="")
+    parser.add_argument('--gcols-range', default="")
     parser.add_argument('--verbose', action='store_true', help='')
     parser.add_argument('fn_in', nargs='?', help='.txt file in')
     parser.add_argument('fn_out', nargs='?', help='.bin file out')
     args = parser.parse_args()
+
+    grows = []
+    if args.grows:
+        grows = [int(x) for x in args.grows.split(",")]
+    gcols = []
+    if args.gcols:
+        gcols = [int(x) for x in args.gcols.split(",")]
+
+    if args.gcols_range:
+        gcols = range(*[int(x) for x in args.gcols_range.split(",")])
+    if args.grows_range:
+        grows = range(*[int(x) for x in args.grows_range.split(",")])
 
     run(args.fn_in,
         args.fn_out,
@@ -76,6 +98,8 @@ def main():
         rotate=args.rotate,
         flipx=args.flipx,
         flipy=args.flipy,
+        grows=grows,
+        gcols=gcols,
         verbose=args.verbose)
 
 

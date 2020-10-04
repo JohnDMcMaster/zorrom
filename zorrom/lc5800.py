@@ -25,5 +25,5 @@ class LC5800(mrom.MaskROM):
 
     def oi2cr(self, offset, maski):
         row = (offset // 32) ^ 63
-        col = 32*(maski) + ((offset^31) & 31)
+        col = 32 * (maski) + ((offset ^ 31) & 31)
         return (col, row)
