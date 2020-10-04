@@ -40,7 +40,7 @@ Say a character ROM was photographed and converted (say by hand) to produce a bi
 1011011001110111
 ```
 
-This ".txt" gives a ROM physical layout of 16 rows by 8 columns. Conventons:
+This ".txt" gives a ROM physical layout of 16 rows by 8 columns. Conventions:
   * ROMs are usually oriented to be wider than high to fit on desktop monitors better
   * You may not know what bit is 0 vs 1 initially. Choose a convention arbitrarily and document it. That said, people usually choose the brighter bit as "0"
 
@@ -60,7 +60,7 @@ With these theories in mind lets create a decoder. First we need to define a few
 
 More advanced usage can define bits that don't map from the input .txt to the output .bin (ex: parity bits) or unusal word sizes. This will be covered in a later tutorial or see example decoders for more information.
 
-In addition to metadata we need to define the transform from the .txt file to the output binary. There are a few ways to do this but the reccomended way is to define the "oi2cr" function. This takes in the .bin file byte/word offset as well as a bit index ("oi") and must return the .txt file column and row ("cr", after removing whitespace).
+In addition to metadata we need to define the transform from the .txt file to the output binary. There are a few ways to do this but the recommended way is to define the "oi2cr" function. This takes in the .bin file byte/word offset as well as a bit index ("oi") and must return the .txt file column and row ("cr", after removing whitespace).
 
 Bit index meaning the corresponding bit mask is defined as 1 << index. For example, bit 7 is 1 << 7 => 0x80.
 
@@ -80,7 +80,7 @@ Where:
   * Column: the same as the byte offset
   * Row: bit 0 is in row 7 and bit 7 is in row 0. So this is complimented
 
-Check out zorrom/tutorial1.py for the full ipmlementation.
+Check out zorrom/tutorial1.py for the full implementation.
 
 Now we just need to tie this into the architecture database to work. Edit zorrom/archs.py and add the import + matching table definition (already added for tutorial1.
 
@@ -140,8 +140,16 @@ Notes:
 
 Notes:
   * Technology: implant NOR ROM
-  * Polarity: etched bit 1 (apperas darker)
+  * Polarity: etched bit 1 (appears darker)
   * Orientation: main decoding circuitry at left
   * First and last column row groups are not bits (appears as 10 bits but is 8)
   * Reference: https://siliconpr0n.org/map/apple/pic1670-adb-turbo/s1-3-dash-15_mit20x/
+
+## lc5800 (Sayno)
+
+Notes:
+  * Technology: implant NOR ROM
+  * Orientation: decoder at left
+  * Polarity: FIXME
+  * Reference: https://siliconpr0n.org/map/rsa/securid-3c58001e00/mz/
 
