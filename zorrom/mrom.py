@@ -510,7 +510,14 @@ class MaskROM(object):
             bytei = self.word_bytes() * word + maski // 8
             bmaski = maski % 8
         elif self.bigendian():
-            assert 0, "fixme"
+            if self.word_bits() <= 16:
+                if maski >= 8:
+                    bytei = 2 * word
+                else:
+                    bytei = 2 * word + 1
+                bmaski = maski % 8
+            else:
+                assert 0, "fixme"
         else:
             assert 0, "Unsupported word size %u" % self.word_bits()
 
