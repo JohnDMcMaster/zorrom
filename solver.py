@@ -138,15 +138,10 @@ def gen_mr(txtw, txth, word_bits):
     return SolverMaskROM()
 
 def run(fn_in,
+        ref_words,
         dir_out=None,
         verbose=False):
     word_bits = 8
-    # address: (expect, mask)
-    ref_words = {
-        0x00: (0x31, 0xFF),
-        0x01: (0xfe, 0xFF),
-        0x02: (0xff, 0xFF),
-        }
 
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
     print("Loaded %ux x %u h" % (win, hin))
@@ -178,21 +173,40 @@ def run(fn_in,
             print("  Writing %s" % fn_out)
             open(fn_out, "wb").write(guess_bin)
 
-def list_arch():
-    for a in arch2mr.keys():
-        print(a)
-
+def parse_ref_words(argstr):
+    # address: (expect, mask)
+    """
+    ref_words = {
+        0x00: (0x31, 0xFF),
+        0x01: (0xfe, 0xFF),
+        0x02: (0xff, 0xFF),
+        }
+    """
+    
+    ret = {}
+    for constraint in argstr.split(","):
+        parts = constraint.split(":")
+        assert len(parts) <= 3
+        offset = int(parts[0], 0)
+        value = int(parts[1], 0)
+        mask = 0xFF
+        if len(parts) == 3:
+            mask = int(parts[2], 0)
+        ret[offset] = (value, mask)
+    return ret
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
         description='Guess mask ROM layout based on constraints')
+    parser.add_argument('--bytes', required=True, help='Constraints as offset:byte,offset:byte,.. offset:byte:mask is also allowed')
     parser.add_argument('--verbose', action='store_true', help='')
     parser.add_argument('fn_in', help='.txt file in')
     parser.add_argument('dir_out', nargs='?', help='Write top .bin file')
     args = parser.parse_args()
 
     run(args.fn_in,
+        parse_ref_words(args.bytes),
         args.dir_out,
         verbose=args.verbose)
