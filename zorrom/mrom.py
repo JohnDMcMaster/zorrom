@@ -132,10 +132,11 @@ def td_invert(txtdict, w, h):
     return ret
 
 
-def td_rotate(rotate, txtdict, wtxt, htxt):
+def td_rotate(rotate, txtdict, wout, hout):
     """
     w/h referenced to output
     """
+    wtxt, htxt = wout, hout
     if rotate == 180:
         txtdict = td_rotate_180(txtdict, wtxt, htxt)
     elif rotate == 90:
@@ -145,10 +146,19 @@ def td_rotate(rotate, txtdict, wtxt, htxt):
     elif rotate == 270:
         txtdict = td_rotate_90ccw(txtdict, wtxt, htxt)
         wtxt, htxt = htxt, wtxt
+    elif rotate == 0:
+        return txtdict
     else:
-        assert 0
+        assert 0, "bad rotate %s" % rotate
     return txtdict
 
+def td_rotate2(rotate, txtdict, win, hin):
+    if rotate == 90 or rotate == 270:
+        wout, hout = hin, win
+    else:
+        wout, hout = win, hin
+    txtdict = td_rotate(rotate, txtdict, wout, hout)
+    return txtdict, wout, hout
 
 def save_txt(f_out, bits, cols, rows, grows=[], gcols=[], defchar="?"):
     # Now write it nicely formatted
@@ -173,6 +183,10 @@ def save_txt(f_out, bits, cols, rows, grows=[], gcols=[], defchar="?"):
         # Newline afer every row
         f_out.write('\n')
 
+def ret_txt(*args, **kwargs):
+    f = StringIO()
+    save_txt(f, *args, **kwargs)
+    return f.getvalue()
 
 class Bin2Txt(object):
     def __init__(self, mr, f_in, f_out, verbose=False, defchar='X'):
@@ -453,25 +467,30 @@ class MaskROM(object):
 
     def iter_oi(self):
         for offset in range(self.words()):
-            for maski in range(8):
+            for maski in range(self.word_bits()):
                 yield offset, maski
 
     def iter_ow(self):
         for offset in range(self.words()):
-            for maski in range(8):
+            for maski in range(self.word_bits()):
                 yield offset, 1 << maski
 
     def txt2bin(self,
-                buff,
+                f_in,
                 invert=None,
                 rotate=None,
                 flipx=False,
                 flipy=False):
-        t = Txt2Bin(self, buff, verbose=self.verbose)
+        t = Txt2Bin(self, f_in, verbose=self.verbose)
         ret = t.run(rotate=rotate, flipx=flipx, flipy=flipy, invert=invert)
         assert self.bytes() == len(
             ret), "Expected %u bytes, got %u" % (self.bytes(), len(ret))
         return ret
+
+    def txt2bin_buf(self,
+                buf_in,
+                *args, **kwargs):
+        return self.txt2bin(StringIO(buf_in), *args, **kwargs)
 
     def bin2txt(self, f_in, f_out, defchar="X"):
         t = Bin2Txt(self, f_in, f_out, verbose=self.verbose, defchar=defchar)

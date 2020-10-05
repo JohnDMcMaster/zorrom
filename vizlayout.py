@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from zorrom.util import add_bool_arg
 from zorrom import archs
 
@@ -9,7 +10,7 @@ from PyQt5.QtGui import QPainter, QBrush, QPen
 from PyQt5.QtCore import Qt
 
 import sys
-
+import os
 
 class Window(QMainWindow):
     def __init__(self, arch):
@@ -29,7 +30,7 @@ class Window(QMainWindow):
         self.ticks = 0
         self.rate = 1
         self.halfway = False
-        self.reset_half = False
+        self.reset_half = int(os.getenv("HALFPAUSE", "0"))
 
         def timer_chain():
             self.timer = QTimer()
