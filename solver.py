@@ -35,7 +35,7 @@ def try_oi2cr(mr, func, buf):
     mr.oi2cr = old
     return ret
 
-def guess_layout_cols_lr(mr, buf):
+def guess_layout_cols_lr(mr, buf, alg_prefix):
     """
     Assume bits are contiguous in columns
     wrapping around at the next line
@@ -58,7 +58,7 @@ def guess_layout_cols_lr(mr, buf):
         col = maski * bit_cols + bitcol
         row = offset // bit_cols
         return (col, row)
-    yield try_oi2cr(mr, ul_oi2cr, buf), "cols_lr_ul_oi2cr"
+    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-lr-l"
 
     # upper right
     def ur_oi2cr(offset, maski):
@@ -66,9 +66,9 @@ def guess_layout_cols_lr(mr, buf):
         col = maski * bit_cols + bitcol
         row = offset // bit_cols
         return (col, row)
-    yield try_oi2cr(mr, ur_oi2cr, buf), "cols_lr_ur_oi2cr"
+    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-lr-r"
 
-def guess_layout_cols_ud(mr, buf):
+def guess_layout_cols_ud(mr, buf, alg_prefix):
     # Must be able to divide input
     txtw, txth = mr.txtwh()
     if txtw % mr.word_bits() != 0:
@@ -82,7 +82,7 @@ def guess_layout_cols_ud(mr, buf):
         col = maski * bit_cols + bitcol
         row = offset % txth
         return (col, row)
-    yield try_oi2cr(mr, ul_oi2cr, buf), "cols_ul_oi2cr"
+    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-ud-l"
 
     # upper right
     def ur_oi2cr(offset, maski):
@@ -91,7 +91,7 @@ def guess_layout_cols_ud(mr, buf):
         col = maski * bit_cols + bitcol
         row = offset % txth
         return (col, row)
-    yield try_oi2cr(mr, ur_oi2cr, buf), "cols_ur_oi2cr"
+    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-ud-r"
 
 def guess_layout(txtdict_raw, wraw, hraw, word_bits):
     for invert in (0, 1):
@@ -106,11 +106,12 @@ def guess_layout(txtdict_raw, wraw, hraw, word_bits):
                 if invert:
                     txtdict = mrom.td_invert(txtdict, txtw, txth)
                 
+                alg_prefix = "r-%u_flipx-%u_invert-%u_" % (rotate, flipx, invert)
                 txtbuf = mrom.ret_txt(txtdict, txtw, txth)
                 mr = gen_mr(txtw, txth, word_bits)
-                for layout in guess_layout_cols_lr(mr, txtbuf):
+                for layout in guess_layout_cols_lr(mr, txtbuf, alg_prefix):
                     yield layout
-                for layout in guess_layout_cols_ud(mr, txtbuf):
+                for layout in guess_layout_cols_ud(mr, txtbuf, alg_prefix):
                     yield layout
 
 def gen_mr(txtw, txth, word_bits):
@@ -176,6 +177,12 @@ def run(fn_in,
 def parse_ref_words(argstr):
     # address: (expect, mask)
     """
+    All three of thse are equivilent:
+    ./solver.py --bytes 0x31,0xfe,0xff dmg-cpu/rom.txt
+    ./solver.py --bytes 0x00:0x31,0x01:0xfe,0x02:0xff dmg-cpu/rom.txt
+    ./solver.py --bytes 0x00:0x31:0xFF,0x01:0xfe:0xFF,0x02:0xff:0xFF dmg-cpu/rom.txt
+
+    Which maps to:
     ref_words = {
         0x00: (0x31, 0xFF),
         0x01: (0xfe, 0xFF),
@@ -184,15 +191,24 @@ def parse_ref_words(argstr):
     """
     
     ret = {}
+    auto_addr = 0
     for constraint in argstr.split(","):
         parts = constraint.split(":")
         assert len(parts) <= 3
-        offset = int(parts[0], 0)
-        value = int(parts[1], 0)
+        # One arg: assume offset and just use value
+        if len(parts) == 1:
+            offset = auto_addr
+            value = int(parts[0], 0)
+        # two arg: offset:value
+        else:
+            offset = int(parts[0], 0)
+            value = int(parts[1], 0)
         mask = 0xFF
-        if len(parts) == 3:
+        # three arg: allow masking value
+        if len(parts) >= 3:
             mask = int(parts[2], 0)
         ret[offset] = (value, mask)
+        auto_addr += 1
     return ret
 
 if __name__ == "__main__":
