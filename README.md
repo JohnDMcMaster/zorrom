@@ -1,10 +1,10 @@
 Zorro's (mask) ROM
 
-Mask ROM utilities to convert between physical and word representation.
-For example, a ROM chip image typed as a 0/1s .txt file can be converted into a machine readable binary .bin file.
+Utilities to convert between physical and logical representation of chip's memory layout.
+For example, a photograph of a boot ROM that has been converted into a 2D array of bits (.txt) can be converted into a machine readable binary (.bin).
 This .bin can then emulated, disassembled, etc as you'd do with any normal firmware file.
 
-You can generate a .txt file to convert via:
+You can generate a .txt file to input via:
 * typing by hand
 * rompar: https://github.com/AdamLaurie/rompar
 * bitract: https://github.com/SiliconAnalysis/bitract/
