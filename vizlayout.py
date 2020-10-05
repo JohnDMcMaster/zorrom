@@ -29,6 +29,7 @@ class Window(QMainWindow):
         self.ticks = 0
         self.rate = 1
         self.halfway = False
+        self.reset_half = False
 
         def timer_chain():
             self.timer = QTimer()
@@ -43,7 +44,7 @@ class Window(QMainWindow):
     def tick(self):
         half = 8 * self.mr.bytes() / 2
         self.ticks += int(self.rate)
-        if self.ticks >= half and not self.halfway:
+        if self.reset_half and self.ticks >= half and not self.halfway:
             self.ticks = half
             self.rate = 0.5
             self.halfway = True
