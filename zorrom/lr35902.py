@@ -11,7 +11,10 @@ class LR35902(mrom.MaskROM):
         return 'LR35902'
 
     def txtwh(self):
-        # 2 groups of 8 bits across, 16 groups of 8 bits down.
+        # 128 bits across
+        #   Physically organized in 16 groups of 8 bits
+        #   Logically organized in 8 groups of 16 bits
+        # 16 bits down
         return (128, 16)
 
     def invert(self):
@@ -19,6 +22,6 @@ class LR35902(mrom.MaskROM):
 
     '''Given binary (word offset, bit index) return image row/col'''
     def oi2cr(self, offset, maski):
-        col = ((7 - maski) * 16) + (offset % 16)
-        row = offset // 16
+        col = ((7 - maski) * 16) + (offset // 16)
+        row = offset % 16
         return (col, row)
