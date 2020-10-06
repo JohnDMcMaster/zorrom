@@ -23,6 +23,67 @@ Advanced programs:
   * randbin.py: generate a test binary for given architecture
 
 
+# Auto solver tutorial
+
+About half of the ROMs we encounter:
+  * Linearly lay out bits
+  * Don't interleave (ie all of the least significant bits are together)
+  * Have some known pattern, such as a common first instruction
+
+If this is the case the solver may be able to automatically decode your ROM.
+
+Example: Game Boy boot ROM
+
+A Z80 like architecture may start by setting up stack, something like "ld sp,$XXXX". This means that we expect the first byte to be 0x31 for the "ld, sp" instruction. Lets add this as a constraint and run the analyzer:
+
+```
+$ wget https://www.neviksti.com/DMG/DMG_ROM.txt
+$ ./solver.py --bytes 0x31 DMG_ROM.txt DMG_ROM
+...
+Exact matches: 2
+  Writing out/r-90_flipx-1_invert-0_cols-lr-r.bin
+  Writing out/r-90_flipx-1_invert-0_cols-ud-r.bin
+```
+
+Analayzing candidates:
+
+```
+$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-ud-r.bin |head -n 1
+00: 31 fe ff  ld   sp,$FFFE
+$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-lr-r.bin |head -n 1
+00: 31 11 47  ld   sp,$4711
+```
+
+Only the first seems reasonable to setup the stack pointer. Additional analysis of the first binary and/or comparing to existing data shows its the correct binary.
+
+Alternatively if we knew ahead of time the stack pointer value we could be more explicit:
+
+```
+$ ./solver.py --bytes 0x31,0xfe,0xff DMG_ROM.txt DMG_ROM
+...
+Exact matches: 1
+  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-ud-r.bin
+```
+
+Constraints can be put in any of these forms:
+* value: assumes an auto incrementing address, starting from 0. All bits are matched
+* address:value: explicit address. All bits are matched
+* address:value:mask: explicit address and only bits in the given bitmask are checked
+
+For example, if we thought the stack pointer would be in the upper address space but not sure where we could do this:
+
+```
+$ ./solver.py --bytes 0x00:0x31,0x02:0x80:0x80 DMG_ROM.txt DMG_ROM
+...
+Exact matches: 1
+  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-ud-r.bin
+```
+
+Which does:
+  * 0x00:0x31: match byte at address 0x00 to value 0x31
+  * 0x02:0x80:0x80: match byte at address 0x02 to value 0x80, but only check bit 0x80
+
+
 # Developer guide
 
 ## Tutorial 1: Hello, World!
