@@ -94,9 +94,9 @@ Sample to convert to .txt file and extract the conversion algorithm:
 ```
 # https://seanriddle.com/necucom4.html
 # ".txt" file equivilent
-wget https://seanriddle.com/ffredraw.bin
+$ wget https://seanriddle.com/ffredraw.bin
 # output binary
-wget https://seanriddle.com/ffred.bin
+$ wget https://seanriddle.com/ffred.bin
 # 128 per comparing to microscope image
 $ python3 rawbin2txt.py --width 128 ffredraw.bin ffredraw.txt
 # Find some sample bytes
