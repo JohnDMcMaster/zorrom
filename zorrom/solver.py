@@ -2,6 +2,7 @@ from zorrom.archs import arch2mr
 from zorrom import mrom
 import os
 
+
 def check_binary(candidate, ref_words, verbose=True):
     """
     Return exact_match, score 0-1
@@ -23,6 +24,7 @@ def check_binary(candidate, ref_words, verbose=True):
                 matches += 1
     return checks == matches, matches / checks
 
+
 def try_oi2cr(mr, func, buf):
     old = mr.oi2cr
     mr.oi2cr = func
@@ -30,6 +32,7 @@ def try_oi2cr(mr, func, buf):
     ret = mr.txt2bin_buf(buf)
     mr.oi2cr = old
     return ret
+
 
 def guess_layout_cols_lr(mr, buf, alg_prefix):
     """
@@ -54,6 +57,7 @@ def guess_layout_cols_lr(mr, buf, alg_prefix):
         col = maski * bit_cols + bitcol
         row = offset // bit_cols
         return (col, row)
+
     yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-lr-l"
 
     # upper right
@@ -62,7 +66,9 @@ def guess_layout_cols_lr(mr, buf, alg_prefix):
         col = maski * bit_cols + bitcol
         row = offset // bit_cols
         return (col, row)
+
     yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-lr-r"
+
 
 def guess_layout_cols_ud(mr, buf, alg_prefix):
     # Must be able to divide input
@@ -78,6 +84,7 @@ def guess_layout_cols_ud(mr, buf, alg_prefix):
         col = maski * bit_cols + bitcol
         row = offset % txth
         return (col, row)
+
     yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-ud-l"
 
     # upper right
@@ -87,7 +94,9 @@ def guess_layout_cols_ud(mr, buf, alg_prefix):
         col = maski * bit_cols + bitcol
         row = offset % txth
         return (col, row)
+
     yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-ud-r"
+
 
 def guess_layout(txtdict_raw, wraw, hraw, word_bits, verbose=False):
     for invert in (0, 1):
@@ -96,13 +105,15 @@ def guess_layout(txtdict_raw, wraw, hraw, word_bits, verbose=False):
             # Second would cancel out / redundant with rotate
             for flipx in (0, 1):
                 verbose and print("rotate %u, flipx %u" % (rotate, flipx))
-                txtdict, txtw, txth = mrom.td_rotate2(rotate, txtdict_raw, wraw, hraw)
+                txtdict, txtw, txth = mrom.td_rotate2(rotate, txtdict_raw,
+                                                      wraw, hraw)
                 if flipx:
                     txtdict = mrom.td_flipx(txtdict, txtw, txth)
                 if invert:
                     txtdict = mrom.td_invert(txtdict, txtw, txth)
-                
-                alg_prefix = "r-%u_flipx-%u_invert-%u_" % (rotate, flipx, invert)
+
+                alg_prefix = "r-%u_flipx-%u_invert-%u_" % (rotate, flipx,
+                                                           invert)
                 txtbuf = mrom.ret_txt(txtdict, txtw, txth)
                 mr = gen_mr(txtw, txth, word_bits)
                 for layout in guess_layout_cols_lr(mr, txtbuf, alg_prefix):
@@ -110,11 +121,12 @@ def guess_layout(txtdict_raw, wraw, hraw, word_bits, verbose=False):
                 for layout in guess_layout_cols_ud(mr, txtbuf, alg_prefix):
                     yield layout
 
+
 def gen_mr(txtw, txth, word_bits):
     class SolverMaskROM(mrom.MaskROM):
         def __init__(self, verbose=False):
             self.verbose = verbose
-    
+
             # Actual bits of a loaded ROM
             # Canonically stored as the binary itself
             self.binary = None
@@ -123,7 +135,7 @@ def gen_mr(txtw, txth, word_bits):
 
         def desc(self):
             return 'Solver'
-    
+
         def word_bits(self):
             return word_bits
 
@@ -132,7 +144,9 @@ def gen_mr(txtw, txth, word_bits):
 
         def oi2cr(self, offset, maski):
             assert 0, "Required"
+
     return SolverMaskROM()
+
 
 def parse_ref_words(argstr):
     # address: (expect, mask)
@@ -149,7 +163,7 @@ def parse_ref_words(argstr):
         0x02: (0xff, 0xFF),
         }
     """
-    
+
     ret = {}
     auto_addr = 0
     for constraint in argstr.split(","):
@@ -171,10 +185,8 @@ def parse_ref_words(argstr):
         auto_addr += 1
     return ret
 
-def run(fn_in,
-        ref_words,
-        dir_out=None,
-        verbose=False):
+
+def run(fn_in, ref_words, dir_out=None, verbose=False):
     word_bits = 8
 
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
@@ -185,9 +197,14 @@ def run(fn_in,
     best_score = 0.0
     best_algo_info = None
     exact_matches = []
-    for guess_bin, algo_info in guess_layout(txtdict, win, hin, word_bits, verbose=verbose):
+    for guess_bin, algo_info in guess_layout(txtdict,
+                                             win,
+                                             hin,
+                                             word_bits,
+                                             verbose=verbose):
         exact_match, score = check_binary(guess_bin, ref_words)
-        verbose and print("%u match %s, score %0.3f" % (tryi, exact_match, score))
+        verbose and print("%u match %s, score %0.3f" %
+                          (tryi, exact_match, score))
         verbose and print("  %s" % algo_info)
         if score > best_score:
             best_score = score
@@ -206,5 +223,5 @@ def run(fn_in,
             fn_out = os.path.join(dir_out, algo_info + ".bin")
             print("  Writing %s" % fn_out)
             open(fn_out, "wb").write(guess_bin)
-    
+
     return exact_matches

@@ -8,6 +8,7 @@ import warnings
 from zorrom.archs import arch2mr
 from zorrom import solver
 
+
 class TestCase(unittest.TestCase):
     def setUp(self):
         """Call before every test case."""
@@ -55,10 +56,12 @@ class TestCase(unittest.TestCase):
 
     def test_solver(self):
         matches = solver.run("test/lr35902.txt",
-            solver.parse_ref_words("0x55,0x5a,0xb4"),
-            None,
-            verbose=False)
+                             solver.parse_ref_words("0x55,0x5a,0xb4"),
+                             None,
+                             verbose=False)
         assert len(matches) == 1
+        for _algo_info, guess_bin in matches:
+            assert guess_bin == open("test/lr35902.bin", "rb").read()
 
 
 if __name__ == "__main__":

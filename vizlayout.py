@@ -12,6 +12,7 @@ from PyQt5.QtCore import Qt
 import sys
 import os
 
+
 class Window(QMainWindow):
     def __init__(self, arch):
         super().__init__()

@@ -21,6 +21,7 @@ class LR35902(mrom.MaskROM):
         return False
 
     '''Given binary (word offset, bit index) return image row/col'''
+
     def oi2cr(self, offset, maski):
         col = ((7 - maski) * 16) + (offset // 16)
         row = offset % 16

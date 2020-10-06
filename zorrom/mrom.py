@@ -152,6 +152,7 @@ def td_rotate(rotate, txtdict, wout, hout):
         assert 0, "bad rotate %s" % rotate
     return txtdict
 
+
 def td_rotate2(rotate, txtdict, win, hin):
     if rotate == 90 or rotate == 270:
         wout, hout = hin, win
@@ -159,6 +160,7 @@ def td_rotate2(rotate, txtdict, win, hin):
         wout, hout = win, hin
     txtdict = td_rotate(rotate, txtdict, wout, hout)
     return txtdict, wout, hout
+
 
 def save_txt(f_out, bits, cols, rows, grows=[], gcols=[], defchar="?"):
     # Now write it nicely formatted
@@ -183,10 +185,12 @@ def save_txt(f_out, bits, cols, rows, grows=[], gcols=[], defchar="?"):
         # Newline afer every row
         f_out.write('\n')
 
+
 def ret_txt(*args, **kwargs):
     f = StringIO()
     save_txt(f, *args, **kwargs)
     return f.getvalue()
+
 
 class Bin2Txt(object):
     def __init__(self, mr, f_in, f_out, verbose=False, defchar='X'):
@@ -487,9 +491,7 @@ class MaskROM(object):
             ret), "Expected %u bytes, got %u" % (self.bytes(), len(ret))
         return ret
 
-    def txt2bin_buf(self,
-                buf_in,
-                *args, **kwargs):
+    def txt2bin_buf(self, buf_in, *args, **kwargs):
         return self.txt2bin(StringIO(buf_in), *args, **kwargs)
 
     def bin2txt(self, f_in, f_out, defchar="X"):
