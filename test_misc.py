@@ -6,7 +6,7 @@ import io
 import warnings
 
 from zorrom.archs import arch2mr
-
+from zorrom import solver
 
 class TestCase(unittest.TestCase):
     def setUp(self):
@@ -52,6 +52,13 @@ class TestCase(unittest.TestCase):
             open("test/got.txt", "w").write(got)
             open("test/ref.txt", "w").write(ref)
             assert ref == got, arch
+
+    def test_solver(self):
+        matches = solver.run("test/lr35902.txt",
+            solver.parse_ref_words("0x55,0x5a,0xb4"),
+            None,
+            verbose=False)
+        assert len(matches) == 1
 
 
 if __name__ == "__main__":
