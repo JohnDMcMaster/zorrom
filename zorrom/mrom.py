@@ -235,6 +235,28 @@ class Bin2Txt(object):
                  defchar=self.defchar)
 
 
+def load_bin_lsb(f_in):
+    ret = ""
+    for b in f_in.read():
+        for maski in range(8):
+            maskb = 1 << maski
+            if maskb & b:
+                ret += "1"
+            else:
+                ret += "0"
+    return ret
+
+def load_bin_msb(f_in):
+    ret = ""
+    for b in f_in.read():
+        for maski in range(8):
+            maskb = 1 << (7 - maski)
+            if maskb & b:
+                ret += "1"
+            else:
+                ret += "0"
+    return ret
+
 # todo: break out as global util?
 def load_txt(f_in, w, h):
     '''Read input file, checking format and stripping everything not 01 '''

@@ -83,6 +83,32 @@ Which does:
   * 0x00:0x31: match byte at address 0x00 to value 0x31
   * 0x02:0x80:0x80: match byte at address 0x02 to value 0x80, but only check bit 0x80
 
+
+
+## seanriddle.com data
+
+There are a large number of raw data + binaries on this site.
+However, the raw data is packed as a binary instead of as a .txt file.
+Sample to convert to .txt file and extract the conversion algorithm:
+
+```
+# https://seanriddle.com/necucom4.html
+# ".txt" file equivilent
+wget https://seanriddle.com/ffredraw.bin
+# output binary
+wget https://seanriddle.com/ffred.bin
+# 128 per comparing to microscope image
+$ python3 rawbin2txt.py --width 128 ffredraw.bin ffredraw.txt
+# Find some sample bytes
+$ hexdump -C ffred.bin  |head -n 1
+00000000  8f 91 2c ff 90 2c c4 48  81 90 a7 40 af 0a a7 88  |..,..,.H...@....|
+# Rotate 180, bits are in discrete columns, incrementing left within the column
+$ python3 solver.py --bytes 0x8f,0x91,0x2c ffredraw.txt
+Best score: 1.000, r-180_flipx-0_invert-0_cols-ud-l
+Exact matches: 1
+```
+
+
 ## Algorithm
 
 The parameters output are:
