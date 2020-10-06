@@ -83,6 +83,17 @@ Which does:
   * 0x00:0x31: match byte at address 0x00 to value 0x31
   * 0x02:0x80:0x80: match byte at address 0x02 to value 0x80, but only check bit 0x80
 
+## Algorithm
+
+The parameters output are:
+* r: clockwise rotation
+* flipx: whether the ROM is mirrored
+* invert: whether bits are inverted (ie swap 0 and 1)
+* cols-lr-l: bits are in contiguous columns. They start upper left, move right, and then wrap around next row left
+* cols-lr-r: bits are in contiguous columns. They start upper right, move left, and then wrap around next row right
+* cols-ud-l: bits are in contiguous columns. They start upper left, move down, and then wrap around next column top
+* cols-ud-r: bits are in contiguous columns. They start upper right, move down, and then wrap around next column top
+
 
 # Developer guide
 
