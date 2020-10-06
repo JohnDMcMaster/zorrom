@@ -39,18 +39,18 @@ A Z80 like architecture may start by setting up stack, something like "ld sp,$XX
 ```
 $ wget https://www.neviksti.com/DMG/DMG_ROM.txt
 $ ./solver.py --bytes 0x31 DMG_ROM.txt DMG_ROM
-...
+Best score: 1.000, r-90_flipx-1_invert-0_cols-left
 Exact matches: 2
-  Writing out/r-90_flipx-1_invert-0_cols-lr-r.bin
-  Writing out/r-90_flipx-1_invert-0_cols-ud-r.bin
+  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-left.bin
+  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-downr.bin
 ```
 
 Analayzing candidates:
 
 ```
-$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-ud-r.bin |head -n 1
+$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-right.bin |head -n 1
 00: 31 fe ff  ld   sp,$FFFE
-$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-lr-r.bin |head -n 1
+$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-left.bin |head -n 1
 00: 31 11 47  ld   sp,$4711
 ```
 
@@ -60,9 +60,9 @@ Alternatively if we knew ahead of time the stack pointer value we could be more 
 
 ```
 $ ./solver.py --bytes 0x31,0xfe,0xff DMG_ROM.txt DMG_ROM
-...
+Best score: 1.000, r-90_flipx-1_invert-0_cols-downr
 Exact matches: 1
-  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-ud-r.bin
+  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-downr.bin
 ```
 
 Constraints can be put in any of these forms:
@@ -74,9 +74,9 @@ For example, if we thought the stack pointer would be in the upper address space
 
 ```
 $ ./solver.py --bytes 0x00:0x31,0x02:0x80:0x80 DMG_ROM.txt DMG_ROM
-...
+Best score: 1.000, r-90_flipx-1_invert-0_cols-downr
 Exact matches: 1
-  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-ud-r.bin
+  Writing DMG_ROM/r-90_flipx-1_invert-0_cols-downr.bin
 ```
 
 Which does:
@@ -104,21 +104,26 @@ $ hexdump -C ffred.bin  |head -n 1
 00000000  8f 91 2c ff 90 2c c4 48  81 90 a7 40 af 0a a7 88  |..,..,.H...@....|
 # Rotate 180, bits are in discrete columns, incrementing left within the column
 $ python3 solver.py --bytes 0x8f,0x91,0x2c ffredraw.txt
-Best score: 1.000, r-180_flipx-0_invert-0_cols-ud-l
+Best score: 1.000, r-180_flipx-0_invert-0_cols-downl
 Exact matches: 1
 ```
 
 
 ## Algorithm
 
-The parameters output are:
+The core algorithm requires data normalized to start with the lowest address at the top
+and the least significant bit in the left most column.
+
+To this end a pre-processing step is done first where all these permutations are tried:
 * r: clockwise rotation
 * flipx: whether the ROM is mirrored
 * invert: whether bits are inverted (ie swap 0 and 1)
-* cols-lr-l: bits are in contiguous columns. They start upper left, move right, and then wrap around next row left
-* cols-lr-r: bits are in contiguous columns. They start upper right, move left, and then wrap around next row right
-* cols-ud-l: bits are in contiguous columns. They start upper left, move down, and then wrap around next column top
-* cols-ud-r: bits are in contiguous columns. They start upper right, move down, and then wrap around next column top
+
+Each of these permutations is then tried with the following algorithms:
+* cols-left: start upper left, move right, and then wrap around next row left
+* cols-right: start upper right, move left, and then wrap around next row right
+* cols-downl: start upper left, move down, and then wrap around next column top
+* cols-downr: start upper right, move down, and then wrap around next column top
 
 
 # Developer guide

@@ -58,7 +58,7 @@ def guess_layout_cols_lr(mr, buf, alg_prefix):
         row = offset // bit_cols
         return (col, row)
 
-    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-lr-l"
+    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-right"
 
     # upper right
     def ur_oi2cr(offset, maski):
@@ -67,7 +67,7 @@ def guess_layout_cols_lr(mr, buf, alg_prefix):
         row = offset // bit_cols
         return (col, row)
 
-    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-lr-r"
+    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-left"
 
 
 def guess_layout_cols_ud(mr, buf, alg_prefix):
@@ -79,13 +79,13 @@ def guess_layout_cols_ud(mr, buf, alg_prefix):
 
     # upper left
     def ul_oi2cr(offset, maski):
-        # Start left in bit's column and work rigght
+        # Start left in bit's column and work right
         bitcol = offset // txth
         col = maski * bit_cols + bitcol
         row = offset % txth
         return (col, row)
 
-    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-ud-l"
+    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-downl"
 
     # upper right
     def ur_oi2cr(offset, maski):
@@ -95,7 +95,7 @@ def guess_layout_cols_ud(mr, buf, alg_prefix):
         row = offset % txth
         return (col, row)
 
-    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-ud-r"
+    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-downr"
 
 
 def guess_layout(txtdict_raw, wraw, hraw, word_bits, verbose=False):
