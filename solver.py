@@ -14,6 +14,7 @@ if __name__ == "__main__":
         'Constraints as offset:byte,offset:byte,.. offset:byte:mask is also allowed'
     )
     parser.add_argument('--verbose', action='store_true', help='')
+    parser.add_argument('--all', action='store_true', help='')
     parser.add_argument('fn_in', help='.txt file in')
     parser.add_argument('dir_out', nargs='?', help='Write top .bin file')
     args = parser.parse_args()
@@ -21,4 +22,5 @@ if __name__ == "__main__":
     solver.run(args.fn_in,
                solver.parse_ref_words(args.bytes),
                args.dir_out,
+               all=args.all,
                verbose=args.verbose)

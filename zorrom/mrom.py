@@ -166,9 +166,10 @@ def save_txt(f_out, bits, cols, rows, grows=[], gcols=[], defchar="?"):
     # Now write it nicely formatted
     for row in range(rows):
         # Put a space between row gaps
-        while row in grows:
+        agrows = list(grows)
+        while row in agrows:
             f_out.write('\n')
-            grows.remove(row)
+            agrows.remove(row)
         agcols = list(gcols)
         for col in range(cols):
             while col in agcols:
@@ -246,6 +247,7 @@ def load_bin_lsb(f_in):
                 ret += "0"
     return ret
 
+
 def load_bin_msb(f_in):
     ret = ""
     for b in f_in.read():
@@ -256,6 +258,7 @@ def load_bin_msb(f_in):
             else:
                 ret += "0"
     return ret
+
 
 # todo: break out as global util?
 def load_txt(f_in, w, h):

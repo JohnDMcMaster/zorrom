@@ -6,7 +6,8 @@ import argparse
 def run(verbose, rom1_fn, rom2_fn):
     rom1 = open(rom1_fn, "rb").read()
     rom2 = open(rom2_fn, "rb").read()
-    assert len(rom1) == len(rom2), "left bytes %u, right bytes %u" % (len(rom1) == len(rom2))
+    assert len(rom1) == len(
+        rom2), "left bytes %u, right bytes %u" % (len(rom1) == len(rom2))
     l = len(rom1)
     print("0x%04X (%u) bytes" % (l, l))
 

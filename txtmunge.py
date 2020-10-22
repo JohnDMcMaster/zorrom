@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from zorrom import mrom
-from zorrom.util import add_bool_arg
+from zorrom.util import add_bool_arg, parser_grcs, parse_grcs
 
 
 def munge_txt(txt,
@@ -71,26 +71,13 @@ def main():
     parser.add_argument('--flipy',
                         action="store_true",
                         help='Mirror along y axis')
-    parser.add_argument('--grows', default="")
-    parser.add_argument('--grows-range', default="")
-    parser.add_argument('--gcols', default="")
-    parser.add_argument('--gcols-range', default="")
+    parser_grcs(parser)
     parser.add_argument('--verbose', action='store_true', help='')
     parser.add_argument('fn_in', nargs='?', help='.txt file in')
     parser.add_argument('fn_out', nargs='?', help='.bin file out')
     args = parser.parse_args()
 
-    grows = []
-    if args.grows:
-        grows = [int(x) for x in args.grows.split(",")]
-    gcols = []
-    if args.gcols:
-        gcols = [int(x) for x in args.gcols.split(",")]
-
-    if args.gcols_range:
-        gcols = range(*[int(x) for x in args.gcols_range.split(",")])
-    if args.grows_range:
-        grows = range(*[int(x) for x in args.grows_range.split(",")])
+    grows, gcols = parse_grcs(args)
 
     run(args.fn_in,
         args.fn_out,

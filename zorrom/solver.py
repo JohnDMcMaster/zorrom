@@ -186,8 +186,11 @@ def parse_ref_words(argstr):
     return ret
 
 
-def run(fn_in, ref_words, dir_out=None, verbose=False):
+def run(fn_in, ref_words, dir_out=None, verbose=False, all=False):
     word_bits = 8
+
+    if all:
+        ref_words = {}
 
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
     verbose and print("Loaded %ux x %u h" % (win, hin))
@@ -196,32 +199,34 @@ def run(fn_in, ref_words, dir_out=None, verbose=False):
     tryi = 0
     best_score = 0.0
     best_algo_info = None
-    exact_matches = []
+    keep_matches = []
     for guess_bin, algo_info in guess_layout(txtdict,
                                              win,
                                              hin,
                                              word_bits,
                                              verbose=verbose):
-        exact_match, score = check_binary(guess_bin, ref_words)
-        verbose and print("%u match %s, score %0.3f" %
-                          (tryi, exact_match, score))
-        verbose and print("  %s" % algo_info)
-        if score > best_score:
-            best_score = score
-            best_algo_info = algo_info
-        if exact_match:
-            exact_matches.append((algo_info, guess_bin))
+        exact_match = None
+        if not all:
+            exact_match, score = check_binary(guess_bin, ref_words)
+            verbose and print("%u match %s, score %0.3f" %
+                              (tryi, exact_match, score))
+            verbose and print("  %s" % algo_info)
+            if score > best_score:
+                best_score = score
+                best_algo_info = algo_info
+        if exact_match or all:
+            keep_matches.append((algo_info, guess_bin))
         tryi += 1
     verbose and print("")
     print("Best score: %0.3f, %s" % (best_score, best_algo_info))
-    print("Exact matches: %s" % len(exact_matches))
+    print("Keep matches: %s" % len(keep_matches))
 
-    if dir_out and len(exact_matches):
+    if dir_out and len(keep_matches):
         if not os.path.exists(dir_out):
             os.mkdir(dir_out)
-        for algo_info, guess_bin in exact_matches:
+        for algo_info, guess_bin in keep_matches:
             fn_out = os.path.join(dir_out, algo_info + ".bin")
             print("  Writing %s" % fn_out)
             open(fn_out, "wb").write(guess_bin)
 
-    return exact_matches
+    return keep_matches

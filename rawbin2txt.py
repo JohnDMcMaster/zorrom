@@ -2,14 +2,23 @@
 
 from zorrom import mrom
 
-def run(fn_in, fn_out, width, height=None, bits=None, grows=None, gcols=None, lsb=False, verbose=False):
+
+def run(fn_in,
+        fn_out,
+        width,
+        height=None,
+        bits=None,
+        grows=None,
+        gcols=None,
+        lsb=False,
+        verbose=False):
     if lsb:
         txt_raw = mrom.load_bin_lsb(open(fn_in, "rb"))
     else:
         txt_raw = mrom.load_bin_msb(open(fn_in, "rb"))
     if height is None:
         assert len(txt_raw) % width == 0
-        height = len(txt_raw) // width 
+        height = len(txt_raw) // width
     if not bits:
         bits = width * height
     bits = width * height
@@ -30,6 +39,7 @@ def run(fn_in, fn_out, width, height=None, bits=None, grows=None, gcols=None, ls
                   grows=grows,
                   gcols=gcols)
 
+
 if __name__ == "__main__":
     import argparse
 
@@ -48,7 +58,7 @@ if __name__ == "__main__":
         bits = int(args.bits, 0)
 
     run(args.fn_in,
-               args.fn_out,
-               width=int(args.width, 0),
-               bits=bits,
-               verbose=args.verbose)
+        args.fn_out,
+        width=int(args.width, 0),
+        bits=bits,
+        verbose=args.verbose)

@@ -26,6 +26,29 @@ def add_bool_arg(parser, yes_arg, default=False, **kwargs):
                         **kwargs)
 
 
+def parser_grcs(parser):
+    parser.add_argument('--grows', default="")
+    parser.add_argument('--grows-range', default="")
+    parser.add_argument('--gcols', default="")
+    parser.add_argument('--gcols-range', default="")
+
+
+def parse_grcs(args):
+    grows = []
+    if args.grows:
+        grows = [int(x) for x in args.grows.split(",")]
+    gcols = []
+    if args.gcols:
+        gcols = [int(x) for x in args.gcols.split(",")]
+
+    if args.gcols_range:
+        gcols = range(*[int(x) for x in args.gcols_range.split(",")])
+    if args.grows_range:
+        grows = range(*[int(x) for x in args.grows_range.split(",")])
+
+    return grows, gcols
+
+
 def tobytes(buff):
     if type(buff) is str:
         #return bytearray(buff, 'ascii')
