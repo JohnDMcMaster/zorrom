@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
-from PIL import Image
 import argparse
-import os
 
 
 def run(verbose, rom1_fn, rom2_fn):
     rom1 = open(rom1_fn, "rb").read()
     rom2 = open(rom2_fn, "rb").read()
-    assert len(rom1) == len(rom2)
+    assert len(rom1) == len(rom2), "left bytes %u, right bytes %u" % (len(rom1) == len(rom2))
     l = len(rom1)
     print("0x%04X (%u) bytes" % (l, l))
 
@@ -30,10 +28,10 @@ def run(verbose, rom1_fn, rom2_fn):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Compute statistics between two ROMs')
+        description='Compute byte and bit statistics between two .bins')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
-    parser.add_argument('rom1', help='ROM1 file name')
-    parser.add_argument('rom2', help='ROM2 file name')
+    parser.add_argument('rom1', help='ROM1 .bin file name')
+    parser.add_argument('rom2', help='ROM2 .bin file name')
     args = parser.parse_args()
 
     run(verbose=args.verbose, rom1_fn=args.rom1, rom2_fn=args.rom2)
