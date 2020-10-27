@@ -275,7 +275,7 @@ def load_txt(f_in, w, h):
             raise InvalidData('Line %s want length %d, got %d' %
                               (linei, w, len(l)))
         if l.replace('1', '').replace('0', ''):
-            raise InvalidData('Line %s unexpected char' % linei)
+            raise InvalidData('Unexpected char on line %u: "%s"' % (linei, l))
         ret += l
         lines += 1
     if h is None:
