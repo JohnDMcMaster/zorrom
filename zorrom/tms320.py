@@ -23,9 +23,6 @@ class TMS320C15(mrom.MaskROM):
 
     def calc_cr2oi(self, col, row):
         order = [0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0]
-        # out.print((data[i * 8 + order[j & 0xF]] & (1 << (j >> 3))) != 0 ? "1" : 0);
-        i = 511 - row
-        j = col
-        word = i * 8 + order[j & 0xF]
-        maski = j >> 3
+        word = (511 - row) * 8 + order[col & 0xF]
+        maski = col >> 3
         return (word, maski)
