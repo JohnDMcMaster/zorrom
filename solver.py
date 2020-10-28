@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('--rotate', type=int, default=None, help='')
     add_bool_arg(parser, '--flipx', default=None, help='')
     parser.add_argument('--interleave', type=int, default=1, help='')
+    parser.add_argument('--layout-alg', type=str, default=None, help='')
     parser.add_argument('fn_in', help='.txt file in')
     parser.add_argument('dir_out', nargs='?', help='Write top .bin file')
     args = parser.parse_args()
@@ -32,4 +33,5 @@ if __name__ == "__main__":
                rotate_force=args.rotate,
                flipx_force=args.flipx,
                interleave_force=args.interleave,
+               layout_alg_force=args.layout_alg,
                verbose=args.verbose)

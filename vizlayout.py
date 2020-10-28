@@ -74,6 +74,8 @@ class Window(QMainWindow):
                 break
             if maski == 0:
                 painter.setBrush(QBrush(Qt.blue, Qt.SolidPattern))
+            elif off == 0:
+                painter.setBrush(QBrush(Qt.green, Qt.SolidPattern))
             else:
                 painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
 

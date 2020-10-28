@@ -35,7 +35,7 @@ def try_oi2cr(mr, func, buf):
     return ret
 
 
-def guess_layout_cols_lr(mr, buf, alg_prefix):
+def guess_layout_cols_lr(mr, buf, alg_prefix, layout_alg_force=None):
     """
     Assume bits are contiguous in columns
     wrapping around at the next line
@@ -52,33 +52,37 @@ def guess_layout_cols_lr(mr, buf, alg_prefix):
         return
     bit_cols = txtw // mr.word_bits()
 
-    # upper left
+    # upper left start moving right
     def ul_oi2cr(offset, maski):
         bitcol = offset % bit_cols
         col = maski * bit_cols + bitcol
         row = offset // bit_cols
         return (col, row)
 
-    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-right"
+    name = "cols-right"
+    if layout_alg_force is None or layout_alg_force == name:
+        yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + name
 
-    # upper right
+    # upper right start moving left
     def ur_oi2cr(offset, maski):
         bitcol = bit_cols - 1 - offset % bit_cols
         col = maski * bit_cols + bitcol
         row = offset // bit_cols
         return (col, row)
 
-    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-left"
+    name = "cols-left"
+    if layout_alg_force is None or layout_alg_force == name:
+        yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + name
 
 
-def guess_layout_cols_ud(mr, buf, alg_prefix):
+def guess_layout_cols_ud(mr, buf, alg_prefix, layout_alg_force=None):
     # Must be able to divide input
     txtw, txth = mr.txtwh()
     if txtw % mr.word_bits() != 0:
         return
     bit_cols = txtw // mr.word_bits()
 
-    # upper left
+    # upper left moving down
     def ul_oi2cr(offset, maski):
         # Start left in bit's column and work right
         bitcol = offset // txth
@@ -86,9 +90,11 @@ def guess_layout_cols_ud(mr, buf, alg_prefix):
         row = offset % txth
         return (col, row)
 
-    yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + "cols-downl"
+    name = "cols-downl"
+    if layout_alg_force is None or layout_alg_force == name:
+        yield try_oi2cr(mr, ul_oi2cr, buf), alg_prefix + name
 
-    # upper right
+    # upper right moving down
     def ur_oi2cr(offset, maski):
         # Start right in bit's column and work left
         bitcol = bit_cols - offset // txth - 1
@@ -96,7 +102,9 @@ def guess_layout_cols_ud(mr, buf, alg_prefix):
         row = offset % txth
         return (col, row)
 
-    yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + "cols-downr"
+    name = "cols-downr"
+    if layout_alg_force is None or layout_alg_force == name:
+        yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + name
 
 
 def td_interleave_lr(txtdict, txtw, txth, interleaves, word_bits=8, verbose=0):
@@ -162,6 +170,7 @@ def guess_layout(txtdict_raw,
                  rotate_force=None,
                  flipx_force=None,
                  interleave_force=1,
+                 layout_alg_force=None,
                  verbose=False):
     if invert_force is not None:
         invert_gen = (invert_force, )
@@ -198,6 +207,7 @@ def guess_layout(txtdict_raw,
                 if interleave_force:
                     # assert interleave_force <= interleave_maxn
                     interleave_lr_gen = (interleave_force, )
+                # Default 1 => don't interleave
                 else:
                     # interleave_max = txtw // word_bits
                     # interleave_maxn = int(math.log(interleave_max, 2))
@@ -229,10 +239,10 @@ def guess_layout(txtdict_raw,
                         rotate, flipx, invert, interleave_lr)
                     txtbuf = mrom.ret_txt(txtdict, txtw, txth)
                     mr = gen_mr(txtw, txth, word_bits)
-                    for layout in guess_layout_cols_lr(mr, txtbuf, alg_prefix):
-                        yield layout
-                    for layout in guess_layout_cols_ud(mr, txtbuf, alg_prefix):
-                        yield layout
+                    for layout, name in guess_layout_cols_lr(mr, txtbuf, alg_prefix, layout_alg_force):
+                        yield layout, name
+                    for layout, name in guess_layout_cols_ud(mr, txtbuf, alg_prefix, layout_alg_force):
+                        yield layout, name
 
 
 def gen_mr(txtw, txth, word_bits):
@@ -307,11 +317,9 @@ def run(fn_in,
         invert_force=None,
         rotate_force=None,
         flipx_force=None,
-        interleave_force=1):
+        interleave_force=1,
+        layout_alg_force=None):
     word_bits = 8
-
-    if all:
-        ref_words = {}
 
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
     verbose and print("Loaded %ux x %u h" % (win, hin))
@@ -329,9 +337,10 @@ def run(fn_in,
                                              rotate_force=rotate_force,
                                              flipx_force=flipx_force,
                                              interleave_force=interleave_force,
+                                             layout_alg_force=layout_alg_force,
                                              verbose=verbose):
         exact_match = None
-        if not all:
+        if ref_words:
             exact_match, score = check_binary(guess_bin, ref_words)
             verbose and print("%u match %s, score %0.3f" %
                               (tryi, exact_match, score))
