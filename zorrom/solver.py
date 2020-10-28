@@ -35,7 +35,11 @@ def try_oi2cr(mr, func, buf):
     return ret
 
 
-def guess_layout_cols_lr(mr, buf, alg_prefix, layout_alg_force=None):
+def guess_layout_cols_lr(mr,
+                         buf,
+                         alg_prefix,
+                         layout_alg_force=None,
+                         verbose=False):
     """
     Assume bits are contiguous in columns
     wrapping around at the next line
@@ -49,6 +53,7 @@ def guess_layout_cols_lr(mr, buf, alg_prefix, layout_alg_force=None):
     # Must be able to divide input
     txtw, _txth = mr.txtwh()
     if txtw % mr.word_bits() != 0:
+        verbose and "guess_layout_cols_lr: bad width"
         return
     bit_cols = txtw // mr.word_bits()
 
@@ -75,10 +80,15 @@ def guess_layout_cols_lr(mr, buf, alg_prefix, layout_alg_force=None):
         yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + name
 
 
-def guess_layout_cols_ud(mr, buf, alg_prefix, layout_alg_force=None):
+def guess_layout_cols_ud(mr,
+                         buf,
+                         alg_prefix,
+                         layout_alg_force=None,
+                         verbose=False):
     # Must be able to divide input
     txtw, txth = mr.txtwh()
     if txtw % mr.word_bits() != 0:
+        verbose and print("guess_layout_cols_ud: bad width")
         return
     bit_cols = txtw // mr.word_bits()
 
@@ -171,13 +181,21 @@ def td_interleave_lr(txtdict, txtw, txth, interleaves, word_bits=8, verbose=0):
 def guess_layout(txtdict_raw,
                  wraw,
                  hraw,
-                 word_bits,
+                 word_bits=8,
+                 words=None,
                  invert_force=None,
                  rotate_force=None,
                  flipx_force=None,
                  interleave_force=1,
                  layout_alg_force=None,
                  verbose=False):
+    verbose and print("guess_layout()")
+
+    if layout_alg_force:
+        algs = ("cols-left", "cols-right", "cols-downl", "cols-downr")
+        assert layout_alg_force in algs, "Got %s, need one of %s" % (
+            layout_alg_force, algs)
+
     if invert_force is not None:
         invert_gen = (invert_force, )
     else:
@@ -209,7 +227,8 @@ def guess_layout(txtdict_raw,
                             ret += 1
 
                 if txtw % word_bits != 0:
-                    return
+                    verbose and print("rotate %u: bad width" % rotate)
+                    continue
                 if interleave_force:
                     # assert interleave_force <= interleave_maxn
                     interleave_lr_gen = (interleave_force, )
@@ -224,6 +243,10 @@ def guess_layout(txtdict_raw,
                     interleave_lr_gen = [
                         1 << x for x in range(0, interleave_maxn + 1)
                     ]
+                interleave_lr_gen = list(interleave_lr_gen)
+                if len(interleave_lr_gen) == 0:
+                    verbose and print("interleave failed")
+                    continue
                 for interleave_lr in interleave_lr_gen:
                     # print("int %u, %u" % (interleave_lr, interleave_lr_exp))
                     # assert interleave_lr <= interleave_max
@@ -244,11 +267,20 @@ def guess_layout(txtdict_raw,
 
                     alg_prefix = "r-%u_flipx-%u_invert-%u_inverleave-lr-%u_" % (
                         rotate, flipx, invert, interleave_lr)
+                    verbose and print("Trying %s" % alg_prefix)
                     txtbuf = mrom.ret_txt(txtdict, txtw, txth)
                     mr = gen_mr(txtw, txth, word_bits)
-                    for layout, name in guess_layout_cols_lr(mr, txtbuf, alg_prefix, layout_alg_force):
+                    for layout, name in guess_layout_cols_lr(mr,
+                                                             txtbuf,
+                                                             alg_prefix,
+                                                             layout_alg_force,
+                                                             verbose=verbose):
                         yield layout, name
-                    for layout, name in guess_layout_cols_ud(mr, txtbuf, alg_prefix, layout_alg_force):
+                    for layout, name in guess_layout_cols_ud(mr,
+                                                             txtbuf,
+                                                             alg_prefix,
+                                                             layout_alg_force,
+                                                             verbose=verbose):
                         yield layout, name
 
 
@@ -325,11 +357,23 @@ def run(fn_in,
         rotate_force=None,
         flipx_force=None,
         interleave_force=1,
+        write_thresh=1.0,
+        word_bits=8,
+        words=None,
         layout_alg_force=None):
-    word_bits = 8
 
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
     verbose and print("Loaded %ux x %u h" % (win, hin))
+
+    txtbits = win * hin
+    if txtbits % word_bits != 0:
+        print("Invalid geometery: got %uw x %uh => %u bits w/ word size %u" %
+              (win, hin, txtbits, word_bits))
+        return
+    if words is not None and txtbits // word_bits != words:
+        print("Invalid geometery: need %u words but txt has %u words" %
+              (word_bits, txtbits // word_bits))
+        return
 
     txtdict = mrom.txt2dict(txtin, win, hin)
     tryi = 0
@@ -339,26 +383,31 @@ def run(fn_in,
     for guess_bin, algo_info in guess_layout(txtdict,
                                              win,
                                              hin,
-                                             word_bits,
+                                             word_bits=word_bits,
                                              invert_force=invert_force,
                                              rotate_force=rotate_force,
                                              flipx_force=flipx_force,
                                              interleave_force=interleave_force,
                                              layout_alg_force=layout_alg_force,
+                                             words=words,
                                              verbose=verbose):
         exact_match = None
+        score = None
+        keep = all
         if ref_words:
             exact_match, score = check_binary(guess_bin, ref_words)
-            verbose and print("%u match %s, score %0.3f" %
-                              (tryi, exact_match, score))
-            verbose and print("  %s" % algo_info)
+            keep = keep or exact_match or write_thresh and score >= write_thresh
+            if verbose or keep:
+                print("%u match %s, score %0.3f" % (tryi, exact_match, score))
+                print("  %s" % algo_info)
             if score > best_score:
                 best_score = score
                 best_algo_info = algo_info
-        if exact_match or all:
+        if keep:
             keep_matches.append((algo_info, guess_bin))
         tryi += 1
     verbose and print("")
+    print("Tries: %u" % tryi)
     print("Best score: %0.3f, %s" % (best_score, best_algo_info))
     print("Keep matches: %s" % len(keep_matches))
 
