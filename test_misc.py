@@ -55,13 +55,29 @@ class TestCase(unittest.TestCase):
             assert ref == got, arch
 
     def test_solver(self):
-        matches = solver.run("test/lr35902.txt",
-                             solver.parse_ref_words("0x55,0x5a,0xb4"),
-                             None,
-                             verbose=False)
+        matches = solver.run(
+            "test/lr35902.txt",
+            ref_words=solver.parse_ref_words("0x55,0x5a,0xb4"),
+            dir_out=None,
+            verbose=False)
         assert len(matches) == 1
         for _algo_info, guess_bin in matches:
             assert guess_bin == open("test/lr35902.bin", "rb").read()
+
+    def test_solver_interleave(self):
+        matches = solver.run(
+            "test/lc5800.txt",
+            ref_words=solver.parse_ref_words("0xc5,0x5c,0xaf"),
+            dir_out=None,
+            interleave_force=0,
+            invert_force=True,
+            flipx_force=True,
+            rotate_force=0,
+            layout_alg_force="cols-left",
+            verbose=False)
+        assert len(matches) == 1
+        for _algo_info, guess_bin in matches:
+            assert guess_bin == open("test/lc5800.bin", "rb").read()
 
 
 if __name__ == "__main__":

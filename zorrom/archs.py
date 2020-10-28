@@ -5,6 +5,7 @@ from zorrom import pic1670
 from zorrom import lc5800
 from zorrom import tutorial
 from zorrom import lr35902
+from zorrom import tms320
 
 arch2mr = {
     'd8041ah': mcs48.D8041AH,
@@ -16,6 +17,7 @@ arch2mr = {
     'lc5800': lc5800.LC5800,
     'tutorial1': tutorial.Tutorial1,
     'lr35902': lr35902.LR35902,
+    'tms320c15': tms320.TMS320C15,
 }
 
 

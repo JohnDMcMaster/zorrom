@@ -28,10 +28,10 @@ def check_binary(candidate, ref_words, verbose=True):
 
 def try_oi2cr(mr, func, buf):
     old = mr.oi2cr
-    mr.oi2cr = func
+    mr.calc_oi2cr = func
     mr.reindex()
     ret = mr.txt2bin_buf(buf)
-    mr.oi2cr = old
+    mr.calc_oi2cr = old
     return ret
 
 
@@ -304,7 +304,7 @@ def gen_mr(txtw, txth, word_bits):
         def txtwh(self):
             return txtw, txth
 
-        def oi2cr(self, offset, maski):
+        def get_oi2cr(self, offset, maski):
             assert 0, "Required"
 
     return SolverMaskROM()
@@ -363,9 +363,10 @@ def run(fn_in,
         layout_alg_force=None):
 
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
-    verbose and print("Loaded %ux x %u h" % (win, hin))
 
     txtbits = win * hin
+    print("Loaded %ux x %u h => %u bits (%u words)" %
+          (win, hin, txtbits, txtbits // word_bits))
     if txtbits % word_bits != 0:
         print("Invalid geometery: got %uw x %uh => %u bits w/ word size %u" %
               (win, hin, txtbits, word_bits))

@@ -37,7 +37,7 @@ class D8041AH(mrom.MaskROM):
         '''
         return True
 
-    def oi2cr(self, offset, maski):
+    def calc_oi2cr(self, offset, maski):
         '''
         2020-04-06
         This is a candidate for the ugliest code I have ever written
@@ -140,7 +140,7 @@ class M5L8042(mrom.MaskROM):
     def invert(self):
         return False
 
-    def oi2cr(self, offset, maski):
+    def calc_oi2cr(self, offset, maski):
         _cols, rows = self.txtwh()
         '''
         Lowest address as the bottom

@@ -23,7 +23,7 @@ class LC5800(mrom.MaskROM):
 
     '''Given binary (word offset, bit index) return image row/col'''
 
-    def oi2cr(self, offset, maski):
+    def calc_oi2cr(self, offset, maski):
         row = (offset // 32) ^ 63
         col = 32 * (maski) + ((offset ^ 31) & 31)
         return (col, row)

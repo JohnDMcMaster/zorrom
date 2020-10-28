@@ -9,7 +9,7 @@ class Tutorial1(mrom.MaskROM):
         # 16 columns, 8 rows
         return (16, 8)
 
-    def oi2cr(self, offset, maski):
+    def calc_oi2cr(self, offset, maski):
         '''Given binary (word offset, bit index) return image col/row'''
         return offset, 7 - maski
 

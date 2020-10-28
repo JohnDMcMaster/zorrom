@@ -15,6 +15,10 @@ class InvalidData(Exception):
     pass
 
 
+class NotImplemented(Exception):
+    pass
+
+
 def mask_b2i(maskb):
     '''Convert bitmask to bit number'''
     return {
@@ -354,7 +358,8 @@ class MaskROM(object):
         # Canonically stored as the binary itself
         self.binary = None
         # Allows converting between txt and binary space
-        self.map_cr2woi = None
+        self.map_cr2oi = None
+        self.map_oi2cr = None
         self.reindex()
         if txt:
             self.parse_txt(txt)
@@ -450,19 +455,68 @@ class MaskROM(object):
         """
         return "byte"
 
-    def reindex(self):
-        self.map_cr2woi = {}
+    def calc_cr2oi(self, col, row):
+        raise NotImplemented("Required")
+
+    def calc_oi2cr(self, offset, maski):
+        raise NotImplemented("Required")
+
+    def reindex_oi2cr(self):
+        cols, rows = self.txtwh()
         for offset in range(self.words()):
             for maski in range(self.word_bits()):
-                col, row = self.oi2cr(offset, maski)
+                col, row = self.calc_oi2cr(offset, maski)
+                assert 0 <= col < cols and 0 <= row < rows, ("bad rc", col,
+                                                             row, cols, rows)
                 assert (
                     col, row
-                ) not in self.map_cr2woi, "col %u, row %u already in map at (%u words %u wordi)" % (
+                ) not in self.map_cr2oi, "col %u, row %u already in map at (%u words %u wordi)" % (
                     col, row, offset, maski)
-                self.map_cr2woi[(col, row)] = offset, maski
-        assert len(self.map_cr2woi) == self.bits(
-        ), "Binary has %u bits but mapping has %u bits" % (
-            self.bits(), len(self.map_cr2woi))
+                self.map_cr2oi[(col, row)] = (offset, maski)
+                self.map_oi2cr[(offset, maski)] = (col, row)
+
+    def reindex_cr2oi(self):
+        cols, rows = self.txtwh()
+        for row in range(rows):
+            for col in range(cols):
+                offset, maski = self.calc_cr2oi(col, row)
+                assert 0 <= offset < self.words(
+                ) and 0 <= maski < self.word_bits(), (offset, self.words(),
+                                                      maski, self.word_bits())
+
+                assert (
+                    offset, maski
+                ) not in self.map_oi2cr, "offset %u, maski %u already in map at (%u col %u row)" % (
+                    offset, maski, col, row)
+                self.map_cr2oi[(col, row)] = (offset, maski)
+                self.map_oi2cr[(offset, maski)] = (col, row)
+
+    def has_calc_oi2cr(self):
+        try:
+            self.calc_oi2cr(0, 0)
+            return True
+        except NotImplemented:
+            return False
+
+    def has_calc_cr2oi(self):
+        try:
+            self.calc_cr2oi(0, 0)
+            return True
+        except NotImplemented:
+            return False
+
+    def reindex(self):
+        self.map_cr2oi = {}
+        self.map_oi2cr = {}
+        if self.has_calc_oi2cr():
+            self.reindex_oi2cr()
+        elif self.has_calc_cr2oi():
+            self.reindex_cr2oi()
+        else:
+            raise Exception("You must implement a conversion function")
+        assert len(self.map_cr2oi) == self.bits(
+        ), "Binary has %u bits but mapping has %u bits" % (self.bits(),
+                                                           len(self.map_cr2oi))
 
     def cr2ow(self, col, row):
         '''Given image row/col return binary (word offset, binary mask)'''
@@ -471,12 +525,11 @@ class MaskROM(object):
 
     def cr2oi(self, col, row):
         '''Given image row/col return binary (word offset, bit index)'''
-        return self.map_cr2woi[(col, row)]
+        return self.map_cr2oi[(col, row)]
 
-    # You must implement one of these
     def oi2cr(self, offset, maski):
-        '''Given binary (byte offset, bit index) return image row/col'''
-        return self.ow2cr(offset, mask_i2b(maski))
+        '''Given binary (word offset, bit index) return image row/col'''
+        return self.map_oi2cr[(offset, maski)]
 
     def ow2cr(self, offset, maskb):
         '''Given binary (word offset, binary mask) return image row/col '''

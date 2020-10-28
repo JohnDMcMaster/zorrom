@@ -25,7 +25,7 @@ class MB8623x(mrom.MaskROM):
     def invert(self):
         return True
 
-    def oi2cr(self, offset, maski):
+    def calc_oi2cr(self, offset, maski):
         biti = offset * 8 + maski
         #print biti
         # Each column has 16 bytes

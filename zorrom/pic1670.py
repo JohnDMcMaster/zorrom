@@ -32,7 +32,7 @@ class PIC1670(mrom.MaskROM):
 
     '''Given binary (word offset, bit index) return image row/col'''
 
-    def oi2cr(self, offset, maski):
+    def calc_oi2cr(self, offset, maski):
         # logic from modemmap.cc
         b = 12 - maski
         col = offset & 0x3f
