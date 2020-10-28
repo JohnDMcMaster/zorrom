@@ -481,8 +481,9 @@ class MaskROM(object):
             for col in range(cols):
                 offset, maski = self.calc_cr2oi(col, row)
                 assert 0 <= offset < self.words(
-                ) and 0 <= maski < self.word_bits(), (offset, self.words(),
-                                                      maski, self.word_bits())
+                ) and 0 <= maski < self.word_bits(
+                ), "Require 0 <= offset %u < %u and 0 <= maski %u < %u" % (
+                    offset, self.words(), maski, self.word_bits())
 
                 assert (
                     offset, maski

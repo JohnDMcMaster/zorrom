@@ -16,12 +16,12 @@ import os
 class Window(QMainWindow):
     def __init__(self, arch):
         super().__init__()
-        self.title = "PyQt5 Drawing Tutorial"
+        self.title = "vizlayout"
         self.verbose = 0
         self.top = 1
         self.left = 1
         self.width = 1920
-        self.height = 900
+        self.height = 950
         self.setWindowTitle(self.title)
         self.setGeometry(self.top, self.left, self.width, self.height)
         self.show()
@@ -60,10 +60,12 @@ class Window(QMainWindow):
         painter.setBrush(QBrush(Qt.yellow, Qt.SolidPattern))
         # painter.drawRect(10, 40, 400, 200)
 
+        # self.verbose = True
         x0 = 10
         y0 = 10
         txtw, txth = self.mr.txtwh()
-        self.verbose and print("Dimensions: %uw x %uh" % (txtw, txth))
+        self.verbose and print("Dimensions: %uw x %uh rom, %u x %u window" %
+                               (txtw, txth, self.width, self.height))
         pitchx = (self.width - 2 * x0) // txtw
         pitchy = (self.height - 2 * y0) // txth
         pitchx = pitchy = min(pitchx, pitchy)
@@ -72,10 +74,10 @@ class Window(QMainWindow):
         for biti, (off, maski) in enumerate(self.mr.iter_oi()):
             if biti >= self.ticks:
                 break
-            if maski == 0:
-                painter.setBrush(QBrush(Qt.blue, Qt.SolidPattern))
-            elif off == 0:
+            if off == 0:
                 painter.setBrush(QBrush(Qt.green, Qt.SolidPattern))
+            elif maski == 0:
+                painter.setBrush(QBrush(Qt.blue, Qt.SolidPattern))
             else:
                 painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
 
@@ -83,8 +85,8 @@ class Window(QMainWindow):
             x = x0 + col * pitchx
             y = y0 + row * pitchy
             painter.drawRect(x, y, pitchx, pitchy)
-            self.verbose and print("0x%04X:0x%02X: %ux %uy" %
-                                   (off, 1 << maski, x, y))
+            (self.verbose or 0) and print("0x%04X:0x%02X: %ux %uy" %
+                                          (off, 1 << maski, x, y))
 
 
 if __name__ == "__main__":

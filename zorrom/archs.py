@@ -17,6 +17,7 @@ arch2mr = {
     'lc5800': lc5800.LC5800,
     'tutorial1': tutorial.Tutorial1,
     'lr35902': lr35902.LR35902,
+    'tms32010': tms320.TMS32010,
     'tms320c15': tms320.TMS320C15,
 }
 
