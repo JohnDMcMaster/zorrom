@@ -130,27 +130,33 @@ def td_interleave_lr(txtdict, txtw, txth, interleaves, word_bits=8, verbose=0):
     word_intw = txtw // interleaves
     # Width of each bit's interleave section
     bit_intw = txtw // (interleaves * word_bits)
-
-    bit_srcw = txtw // word_bits
+    # No interleaving => evenly divided
+    bit_dstw = txtw // word_bits
 
     verbose and print("in %uw x %uh" % (txtw, txth))
     verbose and print("interleaves %u, word_bits %u" %
                       (interleaves, word_bits))
-    verbose and print("word_intw: %u, bit_intw: %u, bit_srcw: %u" %
-                      (word_intw, bit_intw, bit_srcw))
+    verbose and print("word_intw: %u, bit_intw: %u, bit_dstw: %u" %
+                      (word_intw, bit_intw, bit_dstw))
 
     ret = {}
     for biti in range(word_bits):
         for inti in range(interleaves):
             for x0 in range(bit_intw):
-                # Source moves left/right continuing as if interleave isn't set
-                xin = biti * bit_srcw + inti * bit_intw + x0
-                # Destination moves left/right, skipping to next interleave when word_intw exhausted
-                xout = inti * word_intw + biti * bit_intw + x0
+                # Source is interleaved
+                # Source moves left/right, skipping to next interleave when word_intw exhausted
+                xin = inti * word_intw + biti * bit_intw + x0
+                # Destination is not interleaved
+                # First word from left interleave block, second word from second interleave block, etc
+                # each from the first column
+                # Then process repeats at second column for each interleave
+                # Once all columnms are exhausted moves to next row
+                # xout = biti * bit_dstw + inti * bit_intw + x0
+                xout = biti * bit_dstw + x0 * interleaves + inti
                 for y in range(txth):
                     assert (xout, y) not in ret, (xout, y)
                     ret[(xout, y)] = txtdict[(xin, y)]
-                    if verbose and y == 0:
+                    if verbose and inti == 0 and x0 == 1 and y == 0:
                         print(
                             "biti=%u, inti=%u, x0=%u  (%ux, %uy) => (%ux, %uy)"
                             % (biti, inti, x0, xin, y, xout, y))
@@ -233,7 +239,8 @@ def guess_layout(txtdict_raw,
                                                    txtw,
                                                    txth,
                                                    interleave_lr,
-                                                   word_bits=word_bits)
+                                                   word_bits=word_bits,
+                                                   verbose=verbose)
 
                     alg_prefix = "r-%u_flipx-%u_invert-%u_inverleave-lr-%u_" % (
                         rotate, flipx, invert, interleave_lr)
