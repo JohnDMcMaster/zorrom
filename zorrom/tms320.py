@@ -20,7 +20,7 @@ class TMS32010(mrom.MaskROM):
         return (192, 128)
 
     def invert(self):
-        return True
+        return False
 
     def calc_cr2oi(self, col, row):
         #  data[((col & 0xFFC) | colorder[col & 3]) * 16 + 2 * order[(lineno & 0x7)] + (lineno >> 6)] |= ((c == '0' ? 0 : 1) << (7 - ((lineno >> 3) & 7)));
