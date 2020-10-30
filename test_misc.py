@@ -79,15 +79,19 @@ class TestCase(unittest.TestCase):
         for _algo_info, guess_bin in matches:
             assert guess_bin == open("test/lc5800.bin", "rb").read()
 
-    def solver_assert(self, arch, **kwargs):
+    def solver_assert(self, arch, ref_indexes=None, **kwargs):
         ref_bin = open("test/%s.bin" % arch, "rb").read()
-        matches, tries = solver.run(
-            "test/%s.txt" % arch,
-            ref_words=solver.parse_ref_words(
-                "0x%02x,0x%02x,0x%02x" % (ref_bin[0], ref_bin[1], ref_bin[2])),
-            dir_out=None,
-            verbose=False,
-            **kwargs)
+        ref_words = kwargs.get("ref_words", None)
+        if ref_words is None:
+            if ref_indexes is None:
+                ref_indexes = [0, 1, 2]
+            ref_words = solver.parse_ref_words(",".join(
+                ["%u:0x%02x" % (x, ref_bin[x]) for x in ref_indexes]))
+        matches, tries = solver.run("test/%s.txt" % arch,
+                                    ref_words=ref_words,
+                                    dir_out=None,
+                                    verbose=False,
+                                    **kwargs)
         assert tries == 1, tries
         assert len(matches) == 1, len(matches)
         for _algo_info, guess_bin in matches:
@@ -104,6 +108,7 @@ class TestCase(unittest.TestCase):
             # Best score: 1.000, r-180_flipx-1_invert-1_inverleave-lr-1_cols-downl
             self.solver_assert(
                 "d8041ah",
+                ref_indexes=[0x00, 0x01, 1022, 1023],
                 rotate_force=180,
                 flipx_force=True,
                 invert_force=True,
