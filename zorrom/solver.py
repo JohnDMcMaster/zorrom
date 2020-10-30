@@ -275,13 +275,13 @@ def guess_layout(txtdict_raw,
                                                              alg_prefix,
                                                              layout_alg_force,
                                                              verbose=verbose):
-                        yield layout, name
+                        yield layout, name, txtbuf
                     for layout, name in guess_layout_cols_ud(mr,
                                                              txtbuf,
                                                              alg_prefix,
                                                              layout_alg_force,
                                                              verbose=verbose):
-                        yield layout, name
+                        yield layout, name, txtbuf
 
 
 def gen_mr(txtw, txth, word_bits):
@@ -351,6 +351,8 @@ def parse_ref_words(argstr):
 def run(fn_in,
         ref_words,
         dir_out=None,
+        bin_out=None,
+        txt_out=None,
         verbose=False,
         all=False,
         invert_force=None,
@@ -381,7 +383,7 @@ def run(fn_in,
     best_score = 0.0
     best_algo_info = None
     keep_matches = []
-    for guess_bin, algo_info in guess_layout(txtdict,
+    for guess_bin, algo_info, txt_base in guess_layout(txtdict,
                                              win,
                                              hin,
                                              word_bits=word_bits,
@@ -405,7 +407,7 @@ def run(fn_in,
                 best_score = score
                 best_algo_info = algo_info
         if keep:
-            keep_matches.append((algo_info, guess_bin))
+            keep_matches.append((algo_info, guess_bin, txt_base))
         tryi += 1
     verbose and print("")
     print("Tries: %u" % tryi)
@@ -415,9 +417,21 @@ def run(fn_in,
     if dir_out and len(keep_matches):
         if not os.path.exists(dir_out):
             os.mkdir(dir_out)
-        for algo_info, guess_bin in keep_matches:
+        for algo_info, guess_bin, _txt_base in keep_matches:
             fn_out = os.path.join(dir_out, algo_info + ".bin")
             print("  Writing %s" % fn_out)
             open(fn_out, "wb").write(guess_bin)
+
+    if bin_out is not None:
+        assert len(keep_matches) == 1, len(keep_matches)
+        for algo_info, guess_bin, _txt_base in keep_matches:
+            print("  Writing %s" % (bin_out,))
+            open(bin_out, "wb").write(guess_bin)
+
+    if txt_out is not None:
+        assert len(keep_matches) == 1, len(keep_matches)
+        for algo_info, _guess_bin, txt_base in keep_matches:
+            print("  Writing %s" % (txt_out,))
+            open(txt_out, "w").write(txt_base)
 
     return keep_matches, tryi

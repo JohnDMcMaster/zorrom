@@ -61,7 +61,7 @@ class TestCase(unittest.TestCase):
             dir_out=None,
             verbose=False)
         assert len(matches) == 1
-        for _algo_info, guess_bin in matches:
+        for _algo_info, guess_bin, _txt_base in matches:
             assert guess_bin == open("test/lr35902.bin", "rb").read()
 
     def test_solver_interleave(self):
@@ -76,10 +76,10 @@ class TestCase(unittest.TestCase):
             layout_alg_force="cols-left",
             verbose=False)
         assert len(matches) == 1
-        for _algo_info, guess_bin in matches:
+        for _algo_info, guess_bin, _txt_base in matches:
             assert guess_bin == open("test/lc5800.bin", "rb").read()
 
-    def solver_assert(self, arch, ref_indexes=None, **kwargs):
+    def solver_assert(self, arch, ref_indexes=None, txt_in=None, **kwargs):
         ref_bin = open("test/%s.bin" % arch, "rb").read()
         ref_words = kwargs.get("ref_words", None)
         if ref_words is None:
@@ -87,14 +87,16 @@ class TestCase(unittest.TestCase):
                 ref_indexes = [0, 1, 2]
             ref_words = solver.parse_ref_words(",".join(
                 ["%u:0x%02x" % (x, ref_bin[x]) for x in ref_indexes]))
-        matches, tries = solver.run("test/%s.txt" % arch,
+        if txt_in is None:
+            txt_in = "test/%s.txt" % arch
+        matches, tries = solver.run(txt_in,
                                     ref_words=ref_words,
                                     dir_out=None,
                                     verbose=False,
                                     **kwargs)
         assert tries == 1, tries
         assert len(matches) == 1, len(matches)
-        for _algo_info, guess_bin in matches:
+        for _algo_info, guess_bin, _txt_base in matches:
             open("1.bin", "wb").write(guess_bin)
             open("2.bin", "wb").write(ref_bin)
             assert guess_bin == ref_bin
@@ -104,11 +106,14 @@ class TestCase(unittest.TestCase):
 
         # FIXME: only partially correct
         if 0:
-            # python3 solver.py --bytes 0x84,0xFF test/d8041ah.txt
+            # python3 solver.py --invert --flipx --interleave 1 --rotate 180 --layout-alg cols-downl --bytes 0:0x84,1:0xFF,1022:0x7c,1023:0x18 test/d8041ah.txt
             # Best score: 1.000, r-180_flipx-1_invert-1_inverleave-lr-1_cols-downl
             self.solver_assert(
                 "d8041ah",
-                ref_indexes=[0x00, 0x01, 1022, 1023],
+                # Truncate bottom rows
+                txt_in="test/d8041ah_roi.txt",
+                # ref_indexes=[0x00, 0x01, 1022, 1023],
+                ref_indexes=[0x00, 0x01],
                 rotate_force=180,
                 flipx_force=True,
                 invert_force=True,

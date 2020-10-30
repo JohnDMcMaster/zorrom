@@ -18,6 +18,8 @@ if __name__ == "__main__":
     parser.add_argument('--all', action='store_true', help='')
     add_bool_arg(parser, '--invert', default=None, help='')
     parser.add_argument('--rotate', type=int, default=None, help='')
+    parser.add_argument('--bin-out', default=None, help='Require a single match')
+    parser.add_argument('--txt-out', default=None, help='Require a single match')
     add_bool_arg(parser, '--flipx', default=None, help='')
     parser.add_argument('--interleave', type=int, default=1, help='')
     parser.add_argument('--layout-alg', type=str, default=None, help='')
@@ -31,6 +33,8 @@ if __name__ == "__main__":
     solver.run(args.fn_in,
                solver.parse_ref_words(args.bytes),
                args.dir_out,
+               bin_out=args.bin_out,
+               txt_out=args.txt_out,
                all=args.all,
                invert_force=args.invert,
                rotate_force=args.rotate,
