@@ -420,4 +420,4 @@ def run(fn_in,
             print("  Writing %s" % fn_out)
             open(fn_out, "wb").write(guess_bin)
 
-    return keep_matches
+    return keep_matches, tryi
