@@ -220,7 +220,7 @@ class Bin2Txt(object):
         grows = list(grows)
 
         # Build bit state
-        for word in range(self.mr.words()):
+        for word in range(self.mr.nwords()):
             for maski in range(self.mr.word_bits()):
                 c, r = self.mr.oi2cr(word, maski)
                 if c >= cols or r >= rows:
@@ -289,7 +289,7 @@ def load_txt(f_in, w, h):
     return ret, w, h
 
 
-class Txt2Bin(object):
+class Txt2Words(object):
     def __init__(self, mr, f_in, verbose=False):
         self.mr = mr
         self.f_in = f_in
@@ -315,7 +315,6 @@ class Txt2Bin(object):
 
     # Default impl based off of oi2rc()
     def run(self, rotate=None, flipx=False, flipy=False, invert=None):
-        self.buff_out = bytearray()
         # (col, row) to "1" or "0"
         txtdict = self.txtbits(rotate=rotate,
                                flipx=flipx,
@@ -324,9 +323,10 @@ class Txt2Bin(object):
         # Existing col, row selections
         crs = {}
         w, h = self.mr.txtwh()
+        words = []
 
         def next_word():
-            byte = 0
+            word = 0
             for maski in range(self.mr.word_bits()):
                 c, r = self.mr.oi2cr(offset, maski)
                 assert 0 <= c < w and 0 <= r < h, "Invalid off %u maski %u => 0 <= %u col < %u and 0 <= %u row < %u" % (
@@ -338,16 +338,16 @@ class Txt2Bin(object):
                         (c, r, offset, maski, offset2, maski2))
                 bit = txtdict[(c, r)]
                 if bit == '1':
-                    byte |= 1 << maski
+                    word |= 1 << maski
                 crs[(c, r)] = (offset, maski)
-            return byte
+            return word
 
-        for offset in range(self.mr.words()):
+        for offset in range(self.mr.nwords()):
             word = next_word()
             if self.mr.invert():
                 word ^= self.mr.bitmask()
-            self.mr.append_word(self.buff_out, word)
-        return self.buff_out
+            words.append(word)
+        return words
 
 
 class MaskROM(object):
@@ -356,7 +356,7 @@ class MaskROM(object):
 
         # Actual bits of a loaded ROM
         # Canonically stored as the binary itself
-        self.binary = None
+        self.words = None
         # Allows converting between txt and binary space
         self.map_cr2oi = None
         self.map_oi2cr = None
@@ -406,7 +406,7 @@ class MaskROM(object):
         # ie 1 means put a space between the first and second entry
         return (), ()
 
-    def words(self):
+    def nwords(self):
         w, h = self.txtwh()
         bits = w * h
         # test removed as now supports non 8 bit words.
@@ -416,7 +416,7 @@ class MaskROM(object):
 
     def bits(self):
         """Number of actual usable bits in the binary"""
-        return self.words() * self.word_bits()
+        return self.nwords() * self.word_bits()
 
     def bytes(self):
         '''
@@ -429,7 +429,7 @@ class MaskROM(object):
         1: 0x0FFF
         Will be stored as 4 bytes, not 3 since bytes are padded
         '''
-        return self.words() * self.word_bytes()
+        return self.nwords() * self.word_bytes()
 
     def invert(self):
         '''
@@ -463,15 +463,16 @@ class MaskROM(object):
 
     def reindex_oi2cr(self):
         cols, rows = self.txtwh()
-        for offset in range(self.words()):
+        for offset in range(self.nwords()):
             for maski in range(self.word_bits()):
                 col, row = self.calc_oi2cr(offset, maski)
                 assert 0 <= col < cols and 0 <= row < rows, ("bad rc", col,
                                                              row, cols, rows)
                 assert (
                     col, row
-                ) not in self.map_cr2oi, "col %u, row %u already in map at (%u words %u wordi)" % (
-                    col, row, offset, maski)
+                ) not in self.map_cr2oi, "col %u, row %u already in map as %u.%u, want to add %u.%u" % (
+                    col, row, self.map_cr2oi[(col, row)][0],
+                    self.map_cr2oi[(col, row)][1], offset, maski)
                 self.map_cr2oi[(col, row)] = (offset, maski)
                 self.map_oi2cr[(offset, maski)] = (col, row)
 
@@ -479,11 +480,15 @@ class MaskROM(object):
         cols, rows = self.txtwh()
         for row in range(rows):
             for col in range(cols):
-                offset, maski = self.calc_cr2oi(col, row)
-                assert 0 <= offset < self.words(
+                res = self.calc_cr2oi(col, row)
+                # parity etc
+                if res is None:
+                    continue
+                offset, maski = res
+                assert 0 <= offset < self.nwords(
                 ) and 0 <= maski < self.word_bits(
                 ), "Require 0 <= offset %u < %u and 0 <= maski %u < %u" % (
-                    offset, self.words(), maski, self.word_bits())
+                    offset, self.nwords(), maski, self.word_bits())
 
                 assert (
                     offset, maski
@@ -537,24 +542,26 @@ class MaskROM(object):
         return self.oi2cr(offset, mask_b2i(maskb))
 
     def parse_txt(self, txt):
-        self.binary = self.txt2bin(StringIO(txt))
+        self.words = self.txt2words(StringIO(txt))
 
     def parse_bin(self, bin):
         assert len(bin) == self.bytes()
-        self.binary = bytearray(bin)
+        self.words = []
+        for wordi in range(self.nwords()):
+            self.words.append(self.get_bytearray_word(bin, wordi))
 
     def get_cr(self, col, row):
-        assert self.binary, "Must load binary"
+        assert self.words, "Must load binary"
         offset, maskb = self.cr2ow(col, row)
-        return bool(self.binary[offset] & maskb)
+        return bool(self.words[offset] & maskb)
 
     def iter_oi(self):
-        for offset in range(self.words()):
+        for offset in range(self.nwords()):
             for maski in range(self.word_bits()):
                 yield offset, maski
 
     def iter_ow(self):
-        for offset in range(self.words()):
+        for offset in range(self.nwords()):
             for maski in range(self.word_bits()):
                 yield offset, 1 << maski
 
@@ -564,14 +571,27 @@ class MaskROM(object):
                 rotate=None,
                 flipx=False,
                 flipy=False):
-        t = Txt2Bin(self, f_in, verbose=self.verbose)
-        ret = t.run(rotate=rotate, flipx=flipx, flipy=flipy, invert=invert)
+        t = Txt2Words(self, f_in, verbose=self.verbose)
+        words = t.run(rotate=rotate, flipx=flipx, flipy=flipy, invert=invert)
+        bytes = self.words2bytes(words)
         assert self.bytes() == len(
-            ret), "Expected %u bytes, got %u" % (self.bytes(), len(ret))
-        return ret
+            bytes), "Expected %u bytes, got %u" % (self.bytes(), len(ret))
+        return bytes
 
     def txt2bin_buf(self, buf_in, *args, **kwargs):
         return self.txt2bin(StringIO(buf_in), *args, **kwargs)
+
+    def txt2words_buf(self,
+                      buf_in,
+                      invert=None,
+                      rotate=None,
+                      flipx=False,
+                      flipy=False):
+        t = Txt2Words(self, StringIO(buf_in), verbose=self.verbose)
+        words = t.run(rotate=rotate, flipx=flipx, flipy=flipy, invert=invert)
+        assert self.nwords() == len(
+            words), "Expected %u words, got %u" % (self.nwords(), len(words))
+        return words
 
     def bin2txt(self, f_in, f_out, defchar="X"):
         t = Bin2Txt(self, f_in, f_out, verbose=self.verbose, defchar=defchar)
@@ -588,20 +608,24 @@ class MaskROM(object):
             if self.bigendian():
                 buf.append((w >> 8) & 0xff)
                 buf.append(w & 0xff)
-            else:
+            elif self.littleendian():
                 buf.append(w & 0xff)
                 buf.append((w >> 8) & 0xff)
+            else:
+                assert 0, "endianess not defined"
         elif self.word_bits() <= 32:
             if self.bigendian():
                 buf.append((w >> 24) & 0xff)
                 buf.append((w >> 16) & 0xff)
                 buf.append((w >> 8) & 0xff)
                 buf.append(w & 0xff)
-            else:
+            elif self.littleendian():
                 buf.append(w & 0xff)
                 buf.append((w >> 8) & 0xff)
                 buf.append((w >> 16) & 0xff)
                 buf.append((w >> 24) & 0xff)
+            else:
+                assert 0, "endianess not defined"
         else:
             assert 0, "Unsupported word size %u" % self.word_bits()
 
@@ -625,3 +649,16 @@ class MaskROM(object):
             assert 0, "Unsupported word size %u" % self.word_bits()
 
         return '1' if (buf[bytei] & (1 << bmaski)) else '0'
+
+    def get_bytearray_word(self, buf, wordi):
+        ret = 0
+        for maski in range(self.word_bits()):
+            if self.get_bytearray_bit(buf, wordi, maski) == '1':
+                ret = ret | 1 << maski
+        return ret
+
+    def words2bytes(self, words):
+        ret = bytearray()
+        for word in words:
+            self.append_word(ret, word)
+        return ret

@@ -4,16 +4,15 @@ import os
 import math
 
 
-def check_binary(candidate, ref_words, verbose=True):
+def check_binary(can_words, ref_words, word_bits, verbose=True):
     """
     Return exact_match, score 0-1
     """
-    word_bits = 8
     #bits = len(candidate) * word_bits
     checks = 0
     matches = 0
     for wordi, (expect, mask) in ref_words.items():
-        got = candidate[wordi]
+        got = can_words[wordi]
         for maski in range(word_bits):
             maskb = 1 << maski
             # Is this bit checked?
@@ -30,9 +29,10 @@ def try_oi2cr(mr, func, buf):
     old = mr.oi2cr
     mr.calc_oi2cr = func
     mr.reindex()
-    ret = mr.txt2bin_buf(buf)
+    words = mr.txt2words_buf(buf)
+    bytes = mr.words2bytes(words)
     mr.calc_oi2cr = old
-    return ret
+    return words, bytes
 
 
 def guess_layout_cols_lr(mr,
@@ -78,6 +78,28 @@ def guess_layout_cols_lr(mr,
     name = "cols-left"
     if layout_alg_force is None or layout_alg_force == name:
         yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + name
+
+    # Used in TMS320C15
+    # even bits start from left side, odd bits from right
+    # Basically alternating cols-right and cols-left
+    # they move towards each other and then start again on the next line
+    if mr.word_bits() % 2 == 0:
+
+        def squeeze_lr_oi2cr(offset, maski):
+            left_bit = maski & 0xFFFE
+            if maski % 2 == 0:
+                # cols-right
+                bitcol = offset % bit_cols
+            else:
+                # cols-left (offset by left_bit)
+                bitcol = 2 * bit_cols - 1 - offset % bit_cols
+            col = left_bit * bit_cols + bitcol
+            row = offset // bit_cols
+            return (col, row)
+
+        name = "squeeze-lr"
+        if layout_alg_force is None or layout_alg_force == name:
+            yield try_oi2cr(mr, squeeze_lr_oi2cr, buf), alg_prefix + name
 
 
 def guess_layout_cols_ud(mr,
@@ -182,6 +204,7 @@ def guess_layout(txtdict_raw,
                  wraw,
                  hraw,
                  word_bits=8,
+                 endian_force=None,
                  words=None,
                  invert_force=None,
                  rotate_force=None,
@@ -192,7 +215,8 @@ def guess_layout(txtdict_raw,
     verbose and print("guess_layout()")
 
     if layout_alg_force:
-        algs = ("cols-left", "cols-right", "cols-downl", "cols-downr")
+        algs = ("cols-left", "cols-right", "cols-downl", "cols-downr",
+                "squeeze-lr")
         assert layout_alg_force in algs, "Got %s, need one of %s" % (
             layout_alg_force, algs)
 
@@ -269,7 +293,7 @@ def guess_layout(txtdict_raw,
                         rotate, flipx, invert, interleave_lr)
                     verbose and print("Trying %s" % alg_prefix)
                     txtbuf = mrom.ret_txt(txtdict, txtw, txth)
-                    mr = gen_mr(txtw, txth, word_bits)
+                    mr = gen_mr(txtw, txth, word_bits, endian=endian_force)
                     for layout, name in guess_layout_cols_lr(mr,
                                                              txtbuf,
                                                              alg_prefix,
@@ -284,7 +308,10 @@ def guess_layout(txtdict_raw,
                         yield layout, name, txtbuf
 
 
-def gen_mr(txtw, txth, word_bits):
+def gen_mr(txtw, txth, word_bits, endian):
+    if endian is None:
+        endian = "byte"
+
     class SolverMaskROM(mrom.MaskROM):
         def __init__(self, verbose=False):
             self.verbose = verbose
@@ -300,6 +327,9 @@ def gen_mr(txtw, txth, word_bits):
 
         def word_bits(self):
             return word_bits
+
+        def endian(self):
+            return endian
 
         def txtwh(self):
             return txtw, txth
@@ -361,6 +391,7 @@ def run(fn_in,
         interleave_force=1,
         write_thresh=1.0,
         word_bits=8,
+        endian_force=None,
         words=None,
         layout_alg_force=None):
 
@@ -383,22 +414,25 @@ def run(fn_in,
     best_score = 0.0
     best_algo_info = None
     keep_matches = []
-    for guess_bin, algo_info, txt_base in guess_layout(txtdict,
-                                             win,
-                                             hin,
-                                             word_bits=word_bits,
-                                             invert_force=invert_force,
-                                             rotate_force=rotate_force,
-                                             flipx_force=flipx_force,
-                                             interleave_force=interleave_force,
-                                             layout_alg_force=layout_alg_force,
-                                             words=words,
-                                             verbose=verbose):
+    for (can_words, can_bytes), algo_info, txt_base in guess_layout(
+            txtdict,
+            win,
+            hin,
+            word_bits=word_bits,
+            endian_force=endian_force,
+            invert_force=invert_force,
+            rotate_force=rotate_force,
+            flipx_force=flipx_force,
+            interleave_force=interleave_force,
+            layout_alg_force=layout_alg_force,
+            words=words,
+            verbose=verbose):
+        # assert type(can_bytes) == bytearray, type(can_bytes)
         exact_match = None
         score = None
         keep = all
         if ref_words:
-            exact_match, score = check_binary(guess_bin, ref_words)
+            exact_match, score = check_binary(can_words, ref_words, word_bits)
             keep = keep or exact_match or write_thresh and score >= write_thresh
             if verbose or keep:
                 print("%u match %s, score %0.3f" % (tryi, exact_match, score))
@@ -407,7 +441,12 @@ def run(fn_in,
                 best_score = score
                 best_algo_info = algo_info
         if keep:
-            keep_matches.append((algo_info, guess_bin, txt_base))
+            keep_matches.append({
+                "algorithm": algo_info,
+                "bytes": can_bytes,
+                "can_words": words,
+                "txt_base": txt_base
+            })
         tryi += 1
     verbose and print("")
     print("Tries: %u" % tryi)
@@ -417,21 +456,21 @@ def run(fn_in,
     if dir_out and len(keep_matches):
         if not os.path.exists(dir_out):
             os.mkdir(dir_out)
-        for algo_info, guess_bin, _txt_base in keep_matches:
-            fn_out = os.path.join(dir_out, algo_info + ".bin")
+        for keep_match in keep_matches:
+            fn_out = os.path.join(dir_out, keep_match["algorithm"] + ".bin")
             print("  Writing %s" % fn_out)
-            open(fn_out, "wb").write(guess_bin)
+            open(fn_out, "wb").write(keep_match["bytes"])
 
     if bin_out is not None:
         assert len(keep_matches) == 1, len(keep_matches)
-        for algo_info, guess_bin, _txt_base in keep_matches:
-            print("  Writing %s" % (bin_out,))
-            open(bin_out, "wb").write(guess_bin)
+        for keep_match in keep_matches:
+            print("  Writing %s" % (bin_out, ))
+            open(bin_out, "wb").write(keep_match["bytes"])
 
     if txt_out is not None:
         assert len(keep_matches) == 1, len(keep_matches)
-        for algo_info, _guess_bin, txt_base in keep_matches:
-            print("  Writing %s" % (txt_out,))
+        for algo_info, _can_words, txt_base in keep_matches:
+            print("  Writing %s" % (txt_out, ))
             open(txt_out, "w").write(txt_base)
 
     return keep_matches, tryi

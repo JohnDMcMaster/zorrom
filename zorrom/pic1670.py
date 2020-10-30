@@ -16,7 +16,7 @@ class PIC1670(mrom.MaskROM):
     def word_bits(self):
         return 13
 
-    def words(self):
+    def nwords(self):
         return 0x400
 
     def txtwh(self):

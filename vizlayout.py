@@ -14,7 +14,7 @@ import os
 
 
 class Window(QMainWindow):
-    def __init__(self, arch):
+    def __init__(self, arch, rotate=False):
         super().__init__()
         self.title = "vizlayout"
         self.verbose = 0
@@ -26,10 +26,11 @@ class Window(QMainWindow):
         self.setGeometry(self.top, self.left, self.width, self.height)
         self.show()
         self.arch = arch
+        self.rotate = rotate
 
         self.mr = archs.get_arch(arch)
         self.ticks = 0
-        self.rate = 1
+        self.rate = 0.5
         self.halfway = False
         self.reset_half = int(os.getenv("HALFPAUSE", "0"))
 
@@ -45,12 +46,13 @@ class Window(QMainWindow):
 
     def tick(self):
         half = 8 * self.mr.bytes() / 2
-        self.ticks += int(self.rate)
+        self.ticks += self.rate
         if self.reset_half and self.ticks >= half and not self.halfway:
             self.ticks = half
             self.rate = 0.5
             self.halfway = True
-        self.rate += self.rate * 0.1 + 0.02
+        # self.rate += self.rate * 0.1 + 0.02
+        # self.rate += self.rate * 0.0001 + 0.00002
         # print('tick %u' % self.ticks)
         self.repaint()
 
@@ -64,6 +66,8 @@ class Window(QMainWindow):
         x0 = 10
         y0 = 10
         txtw, txth = self.mr.txtwh()
+        if self.rotate:
+            txtw, txth = txth, txtw
         self.verbose and print("Dimensions: %uw x %uh rom, %u x %u window" %
                                (txtw, txth, self.width, self.height))
         pitchx = (self.width - 2 * x0) // txtw
@@ -82,6 +86,8 @@ class Window(QMainWindow):
                 painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
 
             col, row = self.mr.oi2cr(off, maski)
+            if self.rotate:
+                col, row = row, col
             x = x0 + col * pitchx
             y = y0 + row * pitchy
             painter.drawRect(x, y, pitchx, pitchy)
@@ -95,9 +101,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Convert ROM physical layout to binary')
     parser.add_argument('--verbose', action='store_true', help='')
+    parser.add_argument('--rotate', action='store_true', help='')
     parser.add_argument('--arch', help='Decoder to use (required)')
     args = parser.parse_args()
 
     App = QApplication(sys.argv)
-    window = Window(args.arch)
+    window = Window(args.arch, args.rotate)
     sys.exit(App. exec ())

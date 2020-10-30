@@ -55,16 +55,18 @@ class TestCase(unittest.TestCase):
             assert ref == got, arch
 
     def test_solver(self):
+        """non-constrained solver test"""
         matches, _tries = solver.run(
             "test/lr35902.txt",
             ref_words=solver.parse_ref_words("0x55,0x5a,0xb4"),
             dir_out=None,
             verbose=False)
         assert len(matches) == 1
-        for _algo_info, guess_bin, _txt_base in matches:
-            assert guess_bin == open("test/lr35902.bin", "rb").read()
+        for match in matches:
+            assert match["bytes"] == open("test/lr35902.bin", "rb").read()
 
     def test_solver_interleave(self):
+        """non-constrained interleave test"""
         matches, _tries = solver.run(
             "test/lc5800.txt",
             ref_words=solver.parse_ref_words("0xc5,0x5c,0xaf"),
@@ -76,12 +78,16 @@ class TestCase(unittest.TestCase):
             layout_alg_force="cols-left",
             verbose=False)
         assert len(matches) == 1
-        for _algo_info, guess_bin, _txt_base in matches:
-            assert guess_bin == open("test/lc5800.bin", "rb").read()
+        for match in matches:
+            assert match["bytes"] == open("test/lc5800.bin", "rb").read()
 
-    def solver_assert(self, arch, ref_indexes=None, txt_in=None, **kwargs):
+    def solver_assert(self,
+                      arch,
+                      ref_indexes=None,
+                      txt_in=None,
+                      ref_words=None,
+                      **kwargs):
         ref_bin = open("test/%s.bin" % arch, "rb").read()
-        ref_words = kwargs.get("ref_words", None)
         if ref_words is None:
             if ref_indexes is None:
                 ref_indexes = [0, 1, 2]
@@ -96,15 +102,16 @@ class TestCase(unittest.TestCase):
                                     **kwargs)
         assert tries == 1, tries
         assert len(matches) == 1, len(matches)
-        for _algo_info, guess_bin, _txt_base in matches:
-            open("1.bin", "wb").write(guess_bin)
-            open("2.bin", "wb").write(ref_bin)
-            assert guess_bin == ref_bin
+        for match in matches:
+            # open("1.bin", "wb").write(match["bytes"])
+            # open("2.bin", "wb").write(ref_bin)
+            assert match["bytes"] == ref_bin
 
     def test_solvers(self):
         """Use solver (with hints to make it quick) to solve known layouts"""
 
         # FIXME: only partially correct
+        # mirrors halfway through
         if 0:
             # python3 solver.py --invert --flipx --interleave 1 --rotate 180 --layout-alg cols-downl --bytes 0:0x84,1:0xFF,1022:0x7c,1023:0x18 test/d8041ah.txt
             # Best score: 1.000, r-180_flipx-1_invert-1_inverleave-lr-1_cols-downl
@@ -171,8 +178,19 @@ class TestCase(unittest.TestCase):
         # python3 solver.py --bytes 0xd2,0x21,0xc6 test/tms32010.txt
         # Unsolvable: obfuscated
 
-        # python3 solver.py --bytes 0x9c,0x6d,0xe9 test/tms320c15.txt
-        # Unsolvable, needs new algorithm
+        # python3 solver.py --layout-alg squeeze-lr --bytes 0x9c6d --no-invert --flipx --interleave 1 --rotate 0 --word-bits 16 test/tms320c15.txt
+        # Best score: 1.000, r-0_flipx-1_invert-0_inverleave-lr-1_squeeze-lr
+        self.solver_assert(
+            "tms320c15",
+            word_bits=16,
+            endian_force="big",
+            ref_words=solver.parse_ref_words("0:0x9c6d"),
+            rotate_force=0,
+            flipx_force=True,
+            invert_force=False,
+            interleave_force=1,
+            layout_alg_force="squeeze-lr",
+        )
 
 
 if __name__ == "__main__":

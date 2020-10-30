@@ -22,7 +22,7 @@ class D8041AH(mrom.MaskROM):
         '''
         return (128, 66)
 
-    def words(self):
+    def nwords(self):
         return 128 * 64 // 8
 
     def txtgroups(self):

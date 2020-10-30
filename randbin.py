@@ -23,7 +23,7 @@ def run(arch, fn_out, verbose=False, onebit=False):
                 word = 0
             mr.append_word(out_buf, word)
     else:
-        for _wordi in range(mr.words()):
+        for _wordi in range(mr.nwords()):
             word = random.randint(0, mr.bitmask())
             mr.append_word(out_buf, word)
     open(fn_out, "wb").write(out_buf)

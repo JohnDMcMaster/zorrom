@@ -11,7 +11,7 @@ class LC5800(mrom.MaskROM):
     def word_bits(self):
         return 16
 
-    def words(self):
+    def nwords(self):
         return ((16 * 32 * 64) // 16)
 
     def txtwh(self):

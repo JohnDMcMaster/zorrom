@@ -18,8 +18,12 @@ if __name__ == "__main__":
     parser.add_argument('--all', action='store_true', help='')
     add_bool_arg(parser, '--invert', default=None, help='')
     parser.add_argument('--rotate', type=int, default=None, help='')
-    parser.add_argument('--bin-out', default=None, help='Require a single match')
-    parser.add_argument('--txt-out', default=None, help='Require a single match')
+    parser.add_argument('--bin-out',
+                        default=None,
+                        help='Require a single match')
+    parser.add_argument('--txt-out',
+                        default=None,
+                        help='Require a single match')
     add_bool_arg(parser, '--flipx', default=None, help='')
     parser.add_argument('--interleave', type=int, default=1, help='')
     parser.add_argument('--layout-alg', type=str, default=None, help='')

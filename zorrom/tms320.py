@@ -13,7 +13,7 @@ class TMS32010(mrom.MaskROM):
         # return 16
         return 8
 
-    def words(self):
+    def nwords(self):
         return 1536 * 2
 
     def txtwh(self):
@@ -43,7 +43,7 @@ class TMS320C15(mrom.MaskROM):
     def word_bits(self):
         return 16
 
-    def words(self):
+    def nwords(self):
         return 4096
 
     def txtwh(self):
