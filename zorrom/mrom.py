@@ -339,6 +339,8 @@ class Txt2Words(object):
                 bit = txtdict[(c, r)]
                 if bit == '1':
                     word |= 1 << maski
+                # if r == 0:
+                #    print("tr off %u, mask %u @ %uc %ur => %s" % (offset, maski, c, r, bit))
                 crs[(c, r)] = (offset, maski)
             return word
 

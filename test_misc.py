@@ -61,7 +61,7 @@ class TestCase(unittest.TestCase):
             ref_words=solver.parse_ref_words("0x55,0x5a,0xb4"),
             dir_out=None,
             verbose=False)
-        assert len(matches) == 1
+        assert len(matches) == 1, len(matches)
         for match in matches:
             assert match["bytes"] == open("test/lr35902.bin", "rb").read()
 
@@ -77,7 +77,7 @@ class TestCase(unittest.TestCase):
             rotate_force=0,
             layout_alg_force="cols-left",
             verbose=False)
-        assert len(matches) == 1
+        assert len(matches) == 1, len(matches)
         for match in matches:
             assert match["bytes"] == open("test/lc5800.bin", "rb").read()
 
@@ -136,6 +136,7 @@ class TestCase(unittest.TestCase):
             flipx_force=True,
             invert_force=True,
             interleave_force=2,
+            interleave_dir_force="r",
             layout_alg_force="cols-left",
         )
 
@@ -169,6 +170,7 @@ class TestCase(unittest.TestCase):
             flipx_force=False,
             invert_force=True,
             interleave_force=4,
+            interleave_dir_force="r",
             layout_alg_force="cols-right",
         )
 

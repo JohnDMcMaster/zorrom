@@ -26,10 +26,12 @@ if __name__ == "__main__":
                         help='Require a single match')
     add_bool_arg(parser, '--flipx', default=None, help='')
     parser.add_argument('--interleave', type=int, default=1, help='')
+    parser.add_argument('--interleave-dir', default=None, help='')
     parser.add_argument('--layout-alg', type=str, default=None, help='')
     parser.add_argument('--write-thresh', type=float, default=None, help='')
     parser.add_argument('--word-bits', type=int, default=8, help='')
     parser.add_argument('--words', type=int, default=None, help='')
+    parser.add_argument('--endian', default=None, help='')
     parser.add_argument('fn_in', help='.txt file in')
     parser.add_argument('dir_out', nargs='?', help='Write top .bin file')
     args = parser.parse_args()
@@ -44,8 +46,10 @@ if __name__ == "__main__":
                rotate_force=args.rotate,
                flipx_force=args.flipx,
                interleave_force=args.interleave,
+               interleave_dir_force=args.interleave_dir,
                layout_alg_force=args.layout_alg,
                write_thresh=args.write_thresh,
                word_bits=args.word_bits,
                words=args.words,
+               endian_force=args.endian,
                verbose=args.verbose)

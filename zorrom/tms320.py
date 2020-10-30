@@ -57,3 +57,55 @@ class TMS320C15(mrom.MaskROM):
         word = (511 - row) * 8 + order[col & 0xF]
         maski = col >> 3
         return (word, maski)
+
+
+class TMS320C50(mrom.MaskROM):
+    def desc(self):
+        return 'TMS320C50'
+
+    def endian(self):
+        return "big"
+
+    def word_bits(self):
+        return 16
+
+    def nwords(self):
+        return 2 * 16 * 8 * 22 // 16
+
+    def txtwh(self):
+        return (2 * 16 * 8, 22)
+
+    def invert(self):
+        return True
+
+    def calc_oi2cr(self, word, maski):
+        """
+        top-r
+
+        Terms:
+        -col8: 8 closely packed columns
+        -col8x16: 16 col8's roughly next to each other
+        
+        There are 2 col8x16 in this ROI and 8 in the whole die
+
+        each col group 8
+        16 of those grouped
+        these two of those groups (8 in the entire die)
+        """
+
+        # 16 words per row
+        # 8 even address words at left
+        # 8 odd addredd words at right
+        row = word // (2 * 8)
+        wordmod = word % (2 * 8)
+
+        colx8w = 8
+        col8x16w = 8 * 16
+        if wordmod < 8:
+            col = col8x16w - (15 - maski) * colx8w - colx8w + (wordmod - 0)
+        else:
+            col = 2 * col8x16w - (15 - maski) * colx8w - colx8w + (wordmod - 8)
+
+        # if row == 0:
+        #    print(word, maski, col, row)
+        return (col, row)

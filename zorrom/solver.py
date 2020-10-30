@@ -4,7 +4,7 @@ import os
 import math
 
 
-def check_binary(can_words, ref_words, word_bits, verbose=True):
+def check_binary(can_words, ref_words, word_bits, verbose=False):
     """
     Return exact_match, score 0-1
     """
@@ -13,6 +13,8 @@ def check_binary(can_words, ref_words, word_bits, verbose=True):
     matches = 0
     for wordi, (expect, mask) in ref_words.items():
         got = can_words[wordi]
+        verbose and print("word %u want 0x%04X got 0x%04X" %
+                          (wordi, expect, got))
         for maski in range(word_bits):
             maskb = 1 << maski
             # Is this bit checked?
@@ -25,12 +27,14 @@ def check_binary(can_words, ref_words, word_bits, verbose=True):
     return checks == matches, matches / checks
 
 
-def try_oi2cr(mr, func, buf):
+def try_oi2cr(mr, func, buf, verbose=False):
     old = mr.oi2cr
     mr.calc_oi2cr = func
     mr.reindex()
     words = mr.txt2words_buf(buf)
+    verbose and print("got words 0x%04X" % (words[0]))
     bytes = mr.words2bytes(words)
+    verbose and print("got bytes 0x%02X 0x%02X" % (bytes[0], bytes[1]))
     mr.calc_oi2cr = old
     return words, bytes
 
@@ -109,7 +113,7 @@ def guess_layout_cols_ud(mr,
                          verbose=False):
     # Must be able to divide input
     txtw, txth = mr.txtwh()
-    if txtw % mr.word_bits() != 0:
+    if txth % mr.word_bits() != 0:
         verbose and print("guess_layout_cols_ud: bad width")
         return
     bit_cols = txtw // mr.word_bits()
@@ -139,16 +143,23 @@ def guess_layout_cols_ud(mr,
         yield try_oi2cr(mr, ur_oi2cr, buf), alg_prefix + name
 
 
-def td_interleave_lr(txtdict, txtw, txth, interleaves, word_bits=8, verbose=0):
+def td_interleave_hor(txtdict,
+                      txtw,
+                      txth,
+                      interleaves,
+                      interleave_dir,
+                      word_bits=8,
+                      verbose=0):
     """
     Interleave left/right
-    
     interleaves must be 1, 2, 4, 8, etc
-    
-    interleaves=2, wordsz=8 like:
-    B0 B1 B2 B3 B4 B5 B6 B7 B0 B1 B2 B3 B4 B5 B6 B7
-    B0 B1 B2 B3 B4 B5 B6 B7 B0 B1 B2 B3 B4 B5 B6 B7
-    B0 B1 B2 B3 B4 B5 B6 B7 B0 B1 B2 B3 B4 B5 B6 B7
+
+    Example, given:
+    W0A W1A W2A W3A W0B W1B W2B W3B
+    interleaves=2, wordsz=4 interleave_dir=r becomes:
+    W0A W0B W1A W1B W2A W2B W3A W3B
+    interleaves=2, wordsz=4 interleave_dir=l like:
+    W0B W0A W1B W1A W2B W2A W3B W3A
     ...
     
     That is the first row has word and left and another distinct word at right
@@ -177,7 +188,16 @@ def td_interleave_lr(txtdict, txtw, txth, interleaves, word_bits=8, verbose=0):
             for x0 in range(bit_intw):
                 # Source is interleaved
                 # Source moves left/right, skipping to next interleave when word_intw exhausted
-                xin = inti * word_intw + biti * bit_intw + x0
+                if interleave_dir == "r":
+                    # lowest address at left and then moves right
+                    xin = inti * word_intw + biti * bit_intw + x0
+                elif interleave_dir == "l":
+                    # lowest address at right and then moves left
+                    xin = (interleaves - inti -
+                           1) * word_intw + biti * bit_intw + x0
+                else:
+                    assert 0, interleave_dir
+
                 # Destination is not interleaved
                 # First word from left interleave block, second word from second interleave block, etc
                 # each from the first column
@@ -200,26 +220,47 @@ def td_interleave_lr(txtdict, txtw, txth, interleaves, word_bits=8, verbose=0):
     return ret
 
 
-def guess_layout(txtdict_raw,
-                 wraw,
-                 hraw,
-                 word_bits=8,
-                 endian_force=None,
-                 words=None,
-                 invert_force=None,
-                 rotate_force=None,
-                 flipx_force=None,
-                 interleave_force=1,
-                 layout_alg_force=None,
-                 verbose=False):
-    verbose and print("guess_layout()")
+def interleave_param_gen(interleave_force, interleave_dir_force, txtw,
+                         word_bits, verbose):
+    def div2s_tmp(n):
+        ret = 0
+        while True:
+            if n % 2 != 0:
+                return ret
+            else:
+                n = n // 2
+                ret += 1
 
-    if layout_alg_force:
-        algs = ("cols-left", "cols-right", "cols-downl", "cols-downr",
-                "squeeze-lr")
-        assert layout_alg_force in algs, "Got %s, need one of %s" % (
-            layout_alg_force, algs)
+    if interleave_force:
+        # assert interleave_force <= interleave_maxn
+        interleave_lr_gen = (interleave_force, )
+    # Default 1 => don't interleave
+    else:
+        # interleave_max = txtw // word_bits
+        # interleave_maxn = int(math.log(interleave_max, 2))
+        interleave_maxn = div2s_tmp(txtw // word_bits)
+        # print(txtw, interleave_maxn)
+        # print("interleave %u => %u max " % (txtw, interleave_maxn))
+        # print("txtw=%u, interleave_max: %u (n=%u)" % (txtw, interleave_max, interleave_maxn))
+        interleave_lr_gen = [1 << x for x in range(0, interleave_maxn + 1)]
+    interleave_lr_gen = list(interleave_lr_gen)
+    if len(interleave_lr_gen) == 0:
+        verbose and print("interleave failed")
+        return
 
+    if interleave_dir_force is None:
+        interleave_dir_gen = ("r", "l")
+    else:
+        interleave_dir_gen = (interleave_dir_force, )
+
+    for interleave in interleave_lr_gen:
+        for interleave_dir in interleave_dir_gen:
+            yield (interleave, interleave_dir)
+            if interleave == 1:
+                break
+
+
+def basic_param_gen(invert_force, rotate_force, flipx_force):
     if invert_force is not None:
         invert_gen = (invert_force, )
     else:
@@ -237,75 +278,95 @@ def guess_layout(txtdict_raw,
             else:
                 flipx_force_gen = (0, 1)
             for flipx in flipx_force_gen:
-                verbose and print("rotate %u, flipx %u" % (rotate, flipx))
-                txtdict, txtw, txth = mrom.td_rotate2(rotate, txtdict_raw,
+                yield invert, rotate, flipx
+
+
+import hashlib
+
+
+def hashdbg(s):
+    print("Hash", hashlib.sha1(str(s).encode("ascii")).hexdigest())
+
+
+def guess_layout(txtdict_raw,
+                 wraw,
+                 hraw,
+                 word_bits=8,
+                 endian_force=None,
+                 words=None,
+                 invert_force=None,
+                 rotate_force=None,
+                 flipx_force=None,
+                 interleave_force=1,
+                 interleave_dir_force=None,
+                 layout_alg_force=None,
+                 verbose=False):
+    verbose and print("guess_layout()")
+    # hashdbg(txtdict_raw)
+    # print(txtdict_raw[(75, 4)])
+    # assert 0
+
+    if layout_alg_force:
+        algs = ("cols-left", "cols-right", "cols-downl", "cols-downr",
+                "squeeze-lr")
+        assert layout_alg_force in algs, "Got %s, need one of %s" % (
+            layout_alg_force, algs)
+
+    for invert, rotate, flipx in basic_param_gen(invert_force, rotate_force,
+                                                 flipx_force):
+        verbose and print("rotate %u, flipx %u" % (rotate, flipx))
+
+        txtdict_rotated, txtw, txth = mrom.td_rotate2(rotate, txtdict_raw,
                                                       wraw, hraw)
 
-                def div2s_tmp(n):
-                    ret = 0
-                    while True:
-                        if n % 2 != 0:
-                            return ret
-                        else:
-                            n = n // 2
-                            ret += 1
+        if txtw % word_bits != 0:
+            verbose and print("rotate %u: bad width" % rotate)
+            continue
 
-                if txtw % word_bits != 0:
-                    verbose and print("rotate %u: bad width" % rotate)
-                    continue
-                if interleave_force:
-                    # assert interleave_force <= interleave_maxn
-                    interleave_lr_gen = (interleave_force, )
-                # Default 1 => don't interleave
-                else:
-                    # interleave_max = txtw // word_bits
-                    # interleave_maxn = int(math.log(interleave_max, 2))
-                    interleave_maxn = div2s_tmp(txtw // word_bits)
-                    # print(txtw, interleave_maxn)
-                    # print("interleave %u => %u max " % (txtw, interleave_maxn))
-                    # print("txtw=%u, interleave_max: %u (n=%u)" % (txtw, interleave_max, interleave_maxn))
-                    interleave_lr_gen = [
-                        1 << x for x in range(0, interleave_maxn + 1)
-                    ]
-                interleave_lr_gen = list(interleave_lr_gen)
-                if len(interleave_lr_gen) == 0:
-                    verbose and print("interleave failed")
-                    continue
-                for interleave_lr in interleave_lr_gen:
-                    # print("int %u, %u" % (interleave_lr, interleave_lr_exp))
-                    # assert interleave_lr <= interleave_max
-                    # print("interleave %u => %u" % (txtw, interleave_lr))
+        for interleaves_hor, interleave_dir in interleave_param_gen(
+                interleave_force, interleave_dir_force, txtw, word_bits,
+                verbose):
+            txtdict = dict(txtdict_rotated)
 
-                    if flipx:
-                        txtdict = mrom.td_flipx(txtdict, txtw, txth)
-                    if invert:
-                        txtdict = mrom.td_invert(txtdict, txtw, txth)
+            # print("int %u, %u" % (interleave_lr, interleave_lr_exp))
+            # assert interleave_lr <= interleave_max
+            # print("interleave %u => %u" % (txtw, interleave_lr))
 
-                    if interleave_lr != 1:
-                        txtdict = td_interleave_lr(txtdict,
-                                                   txtw,
-                                                   txth,
-                                                   interleave_lr,
-                                                   word_bits=word_bits,
-                                                   verbose=verbose)
+            if flipx:
+                txtdict = mrom.td_flipx(txtdict, txtw, txth)
+            if invert:
+                txtdict = mrom.td_invert(txtdict, txtw, txth)
 
-                    alg_prefix = "r-%u_flipx-%u_invert-%u_inverleave-lr-%u_" % (
-                        rotate, flipx, invert, interleave_lr)
-                    verbose and print("Trying %s" % alg_prefix)
-                    txtbuf = mrom.ret_txt(txtdict, txtw, txth)
-                    mr = gen_mr(txtw, txth, word_bits, endian=endian_force)
-                    for layout, name in guess_layout_cols_lr(mr,
-                                                             txtbuf,
-                                                             alg_prefix,
-                                                             layout_alg_force,
-                                                             verbose=verbose):
-                        yield layout, name, txtbuf
-                    for layout, name in guess_layout_cols_ud(mr,
-                                                             txtbuf,
-                                                             alg_prefix,
-                                                             layout_alg_force,
-                                                             verbose=verbose):
-                        yield layout, name, txtbuf
+            interleave_str = ""
+            if interleaves_hor != 1:
+                txtdict = td_interleave_hor(txtdict,
+                                            txtw,
+                                            txth,
+                                            interleaves=interleaves_hor,
+                                            interleave_dir=interleave_dir,
+                                            word_bits=word_bits,
+                                            verbose=verbose)
+                interleave_str = "_inverleave-%s-%u" % (interleave_dir,
+                                                        interleaves_hor)
+
+            alg_prefix = "r-%u_flipx-%u_invert-%u%s_" % (rotate, flipx, invert,
+                                                         interleave_str)
+            verbose and print("Trying %s" % alg_prefix)
+            gcols = range(word_bits, txtw, word_bits)
+            txtbuf = mrom.ret_txt(txtdict, txtw, txth, gcols=gcols)
+            mr = gen_mr(txtw, txth, word_bits, endian=endian_force)
+            for layout, name in guess_layout_cols_lr(mr,
+                                                     txtbuf,
+                                                     alg_prefix,
+                                                     layout_alg_force,
+                                                     verbose=verbose):
+                yield layout, name, txtbuf
+            for layout, name in guess_layout_cols_ud(mr,
+                                                     txtbuf,
+                                                     alg_prefix,
+                                                     layout_alg_force,
+                                                     verbose=verbose):
+                yield layout, name, txtbuf
 
 
 def gen_mr(txtw, txth, word_bits, endian):
@@ -357,6 +418,8 @@ def parse_ref_words(argstr):
     """
 
     ret = {}
+    if argstr == "":
+        return ret
     auto_addr = 0
     for constraint in argstr.split(","):
         parts = constraint.split(":")
@@ -389,12 +452,14 @@ def run(fn_in,
         rotate_force=None,
         flipx_force=None,
         interleave_force=1,
+        interleave_dir_force=None,
         write_thresh=1.0,
         word_bits=8,
         endian_force=None,
         words=None,
         layout_alg_force=None):
 
+    # verbose = True
     txtin, win, hin = mrom.load_txt(open(fn_in, "r"), None, None)
 
     txtbits = win * hin
@@ -409,6 +474,7 @@ def run(fn_in,
               (word_bits, txtbits // word_bits))
         return
 
+    # hashdbg(txtin)
     txtdict = mrom.txt2dict(txtin, win, hin)
     tryi = 0
     best_score = 0.0
@@ -424,6 +490,7 @@ def run(fn_in,
             rotate_force=rotate_force,
             flipx_force=flipx_force,
             interleave_force=interleave_force,
+            interleave_dir_force=interleave_dir_force,
             layout_alg_force=layout_alg_force,
             words=words,
             verbose=verbose):
@@ -469,8 +536,8 @@ def run(fn_in,
 
     if txt_out is not None:
         assert len(keep_matches) == 1, len(keep_matches)
-        for algo_info, _can_words, txt_base in keep_matches:
+        for keep_match in keep_matches:
             print("  Writing %s" % (txt_out, ))
-            open(txt_out, "w").write(txt_base)
+            open(txt_out, "w").write(keep_match["txt_base"])
 
     return keep_matches, tryi
