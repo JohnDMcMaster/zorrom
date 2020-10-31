@@ -125,9 +125,9 @@ class TMS320C53(mrom.MaskROM):
         col += [
             # Not confident on this order
             2,
-            1,
             3,
-            0
+            0,
+            1,
         ][page] * page_cols
 
         return (col, row)
