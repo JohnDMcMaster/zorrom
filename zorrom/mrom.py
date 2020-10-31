@@ -468,8 +468,9 @@ class MaskROM(object):
         for offset in range(self.nwords()):
             for maski in range(self.word_bits()):
                 col, row = self.calc_oi2cr(offset, maski)
-                assert 0 <= col < cols and 0 <= row < rows, ("bad rc", col,
-                                                             row, cols, rows)
+                assert 0 <= col < cols and 0 <= row < rows, (
+                    "bad rc, require 0 <= col %u < cols %u and 0 <= row %u < rows %u"
+                    % (col, row, cols, rows))
                 assert (
                     col, row
                 ) not in self.map_cr2oi, "col %u, row %u already in map as %u.%u, want to add %u.%u" % (

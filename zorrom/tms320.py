@@ -59,9 +59,9 @@ class TMS320C15(mrom.MaskROM):
         return (word, maski)
 
 
-class TMS320C50(mrom.MaskROM):
+class TMS320C53(mrom.MaskROM):
     def desc(self):
-        return 'TMS320C50'
+        return 'TMS320C53'
 
     def endian(self):
         return "big"
@@ -70,15 +70,18 @@ class TMS320C50(mrom.MaskROM):
         return 16
 
     def nwords(self):
-        return 2 * 16 * 8 * 22 // 16
+        # overall: 4 pages
+        # page: 2 adjacent blocks
+        # block: 16 groups of 8
+        return 4 * 2 * 16 * 8 * 256 // 16
 
     def txtwh(self):
-        return (2 * 16 * 8, 22)
+        return (4 * 2 * 16 * 8, 256)
 
     def invert(self):
         return True
 
-    def calc_oi2cr(self, word, maski):
+    def calc_oi2cr_page(self, word, maski):
         """
         top-r
 
@@ -92,6 +95,9 @@ class TMS320C50(mrom.MaskROM):
         16 of those grouped
         these two of those groups (8 in the entire die)
         """
+
+        assert 0 <= word < 2 * 16 * 8 * 256 // 16
+        assert 0 <= maski < 16
 
         # 16 words per row
         # 8 even address words at left
@@ -108,4 +114,20 @@ class TMS320C50(mrom.MaskROM):
 
         # if row == 0:
         #    print(word, maski, col, row)
+        return (col, row)
+
+    def calc_oi2cr(self, word, maski):
+        page_words = 2 * 16 * 8 * 256 // 16
+        page_cols = 2 * 8 * 16
+        page = word // page_words
+
+        col, row = self.calc_oi2cr_page(word % page_words, maski)
+        col += [
+            # Not confident on this order
+            2,
+            1,
+            3,
+            0
+        ][page] * page_cols
+
         return (col, row)

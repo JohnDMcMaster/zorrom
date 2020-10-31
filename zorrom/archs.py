@@ -19,7 +19,7 @@ arch2mr = {
     'lr35902': lr35902.LR35902,
     'tms32010': tms320.TMS32010,
     'tms320c15': tms320.TMS320C15,
-    'tms320c50': tms320.TMS320C50,
+    'tms320c53': tms320.TMS320C53,
 }
 
 
