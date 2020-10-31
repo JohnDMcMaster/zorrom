@@ -59,9 +59,9 @@ class TMS320C15(mrom.MaskROM):
         return (word, maski)
 
 
-class TMS320C53(mrom.MaskROM):
-    def desc(self):
-        return 'TMS320C53'
+class TMS320C5X(mrom.MaskROM):
+    page_words = 2 * 16 * 8 * 256 // 16
+    page_cols = 2 * 8 * 16
 
     def endian(self):
         return "big"
@@ -73,10 +73,13 @@ class TMS320C53(mrom.MaskROM):
         # overall: 4 pages
         # page: 2 adjacent blocks
         # block: 16 groups of 8
-        return 4 * 2 * 16 * 8 * 256 // 16
+        return self.pages() * 2 * 16 * 8 * 256 // 16
+
+    def pages(self):
+        raise Exception("Required")
 
     def txtwh(self):
-        return (4 * 2 * 16 * 8, 256)
+        return (self.pages() * 2 * 16 * 8, 256)
 
     def invert(self):
         return True
@@ -116,18 +119,48 @@ class TMS320C53(mrom.MaskROM):
         #    print(word, maski, col, row)
         return (col, row)
 
-    def calc_oi2cr(self, word, maski):
-        page_words = 2 * 16 * 8 * 256 // 16
-        page_cols = 2 * 8 * 16
-        page = word // page_words
 
-        col, row = self.calc_oi2cr_page(word % page_words, maski)
+"""
+Wafer data set is not properly decoded, can't process
+
+class TMS320C52(TMS320C5X):
+    def desc(self):
+        return 'TMS320C52'
+
+    def pages(self):
+        return 3
+
+    def calc_oi2cr(self, word, maski):
+        page = word // self.page_words
+
+        # print("page", page)
+        col, row = self.calc_oi2cr_page(word % self.page_words, maski)
         col += [
-            # Not confident on this order
+            2,
+            0,
+            1,
+        ][page] * self.page_cols
+
+        return (col, row)
+"""
+
+
+class TMS320C53(TMS320C5X):
+    def desc(self):
+        return 'TMS320C53'
+
+    def pages(self):
+        return 4
+
+    def calc_oi2cr(self, word, maski):
+        page = word // self.page_words
+
+        col, row = self.calc_oi2cr_page(word % self.page_words, maski)
+        col += [
             2,
             3,
             0,
             1,
-        ][page] * page_cols
+        ][page] * self.page_cols
 
         return (col, row)
