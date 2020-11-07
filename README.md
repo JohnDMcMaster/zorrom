@@ -256,3 +256,44 @@ Notes:
   * Polarity: FIXME
   * Reference: https://siliconpr0n.org/map/rsa/securid-3c58001e00/mz/
 
+
+
+# Version history
+
+
+1.3.0
+  * Add archs
+    * TMS32010
+    * TMS320C15
+    * TMS320C53
+  * API changes
+    * Rename words(self) => nwords(self)
+    * Rename oi2cr(self, word, maski) => calc_oi2cr(self, word, maski)
+    * Added calc_cr2oi(self, col, row)
+      * Allows mapping ROM by column and row to offset, bit instead of offset, bit to column, row
+      * This is slightly more error prone than calc_oi2cr()
+      * Good if you need to quickly import an algorithm written this way
+
+1.2.0
+  * Add archs
+    * LC5800
+    * LR35902
+  * Add solver
+
+1.1.0
+  * Add archs
+    * PIC1670
+  * Test suite
+  * n bit word support (was byte only)
+
+1.0.0
+  * Add vizlayout
+  * python3
+
+0.0.0
+  * Add txt2bin
+  * Add bin2txt
+  * Added archs
+    * D8041AH
+    * M5L8042
+    * MB86233
