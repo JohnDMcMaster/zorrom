@@ -6,7 +6,7 @@ from zorrom import lc5800
 from zorrom import tutorial
 from zorrom import lr35902
 from zorrom import tms320
-from zorrom import wch340
+from zorrom import ch340
 
 arch2mr = {
     'd8041ah': mcs48.D8041AH,
@@ -22,7 +22,7 @@ arch2mr = {
     'tms320c15': tms320.TMS320C15,
     # 'tms320c52': tms320.TMS320C52,
     'tms320c53': tms320.TMS320C53,
-    'wch340': wch340.CH340,
+    'ch340': ch340.CH340,
 }
 
 
