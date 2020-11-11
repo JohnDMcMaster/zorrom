@@ -4,7 +4,7 @@ from zorrom import mrom
 # Unknown CH340, possibly CH340T
 class CH340T(mrom.MaskROM):
     def desc(self):
-        return 'CH340'
+        return 'CH340T'
 
     def endian(self):
         return "big"
@@ -32,7 +32,7 @@ class CH340T(mrom.MaskROM):
 
 class CH340G(mrom.MaskROM):
     def desc(self):
-        return 'CH340'
+        return 'CH340G'
 
     def endian(self):
         return "big"
