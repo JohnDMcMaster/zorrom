@@ -1,6 +1,7 @@
 from zorrom import mrom
 
 
+# This is possible the CH340T-Series
 class CH340(mrom.MaskROM):
     def desc(self):
         return 'CH340'
