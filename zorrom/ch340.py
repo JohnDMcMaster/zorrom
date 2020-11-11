@@ -1,8 +1,8 @@
 from zorrom import mrom
 
 
-# This is possible the CH340T-Series
-class CH340(mrom.MaskROM):
+# Unknown CH340, possibly CH340T
+class CH340T(mrom.MaskROM):
     def desc(self):
         return 'CH340'
 
