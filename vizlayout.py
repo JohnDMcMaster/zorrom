@@ -14,7 +14,7 @@ import os
 
 
 class Window(QMainWindow):
-    def __init__(self, arch, rotate=False):
+    def __init__(self, arch, rotate=False, rate_c1=0.1, rate_c0=0.02, rate0=0.5, reset_half=False):
         super().__init__()
         self.title = "vizlayout"
         self.verbose = 0
@@ -30,9 +30,12 @@ class Window(QMainWindow):
 
         self.mr = archs.get_arch(arch)
         self.ticks = 0
-        self.rate = 0.5
+        self.rate_c1 = rate_c1
+        self.rate_c0 = rate_c0
+        rate0 = rate0
+        self.rate = rate0
         self.halfway = False
-        self.reset_half = int(os.getenv("HALFPAUSE", "0"))
+        self.reset_half = reset_half
 
         def timer_chain():
             self.timer = QTimer()
@@ -51,7 +54,7 @@ class Window(QMainWindow):
             self.ticks = half
             self.rate = 0.5
             self.halfway = True
-        # self.rate += self.rate * 0.1 + 0.02
+        self.rate += self.rate * self.rate_c1 + self.rate_c0
         # self.rate += self.rate * 0.0001 + 0.00002
         # print('tick %u' % self.ticks)
         self.repaint()
@@ -102,9 +105,13 @@ if __name__ == "__main__":
         description='Convert ROM physical layout to binary')
     parser.add_argument('--verbose', action='store_true', help='')
     parser.add_argument('--rotate', action='store_true', help='')
+    parser.add_argument('--reset-half', action='store_true', help='')
+    parser.add_argument('--rate0', type=float, default=0.5, help='Bits per second at t=0')
+    parser.add_argument('--rate_c0', type=float, default=0.02, help='Bits per second to add every second')
+    parser.add_argument('--rate_c1', type=float, default=0.1, help='Compounding bits per second')
     parser.add_argument('--arch', help='Decoder to use (required)')
     args = parser.parse_args()
 
     App = QApplication(sys.argv)
-    window = Window(args.arch, args.rotate)
+    window = Window(args.arch, args.rotate, reset_half=args.reset_half, rate0=args.rate0, rate_c0=args.rate_c0, rate_c1=args.rate_c1)
     sys.exit(App. exec ())
