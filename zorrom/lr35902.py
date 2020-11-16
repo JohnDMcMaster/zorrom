@@ -1,4 +1,4 @@
-from zorrom import mrom
+from zorrom import solver
 '''
 Reference
 https://www.neviksti.com/DMG/
@@ -6,7 +6,7 @@ https://www.neviksti.com/DMG/
 '''
 
 
-class LR35902(mrom.MaskROM):
+class LR35902(solver.SolverMaskROM):
     def desc(self):
         return 'LR35902'
 
@@ -20,9 +20,9 @@ class LR35902(mrom.MaskROM):
     def invert(self):
         return False
 
-    '''Given binary (word offset, bit index) return image row/col'''
-
-    def calc_oi2cr(self, offset, maski):
-        col = ((7 - maski) * 16) + (offset // 16)
-        row = offset % 16
-        return (col, row)
+    def solver_params(self):
+        return {
+            "rotate": 180,
+            "flipx": True,
+            "layout-alg": "cols-downr",
+        }

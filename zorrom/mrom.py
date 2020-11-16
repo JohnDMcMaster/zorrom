@@ -81,7 +81,15 @@ def dict2txt(txtdict, w, h):
     return ret
 
 
+"""
+def td_debug_print(td):
+    for i, (k, v) in enumerate(sorted(td.items())):
+        print(i, k, v)
+"""
+
+
 def td_rotate_180(txtdict, w, h):
+    # td_debug_print(txtdict)
     ret = {}
     for y in range(h):
         for x in range(w):
@@ -463,11 +471,16 @@ class MaskROM(object):
     def calc_oi2cr(self, offset, maski):
         raise NotImplemented("Required")
 
-    def reindex_oi2cr(self):
+    def reindex_calc_oi2cr(self, calc_oi2cr=None):
+        if calc_oi2cr is None:
+            calc_oi2cr = self.calc_oi2cr
         cols, rows = self.txtwh()
+        self.map_cr2oi = {}
+        self.map_oi2cr = {}
+        # print("Reindex w/ %u words, %u word size" % (self.nwords(), self.word_bits()))
         for offset in range(self.nwords()):
             for maski in range(self.word_bits()):
-                col, row = self.calc_oi2cr(offset, maski)
+                col, row = calc_oi2cr(offset, maski)
                 assert 0 <= col < cols and 0 <= row < rows, (
                     "bad rc, require 0 <= col %u < cols %u and 0 <= row %u < rows %u"
                     % (col, row, cols, rows))
@@ -479,11 +492,34 @@ class MaskROM(object):
                 self.map_cr2oi[(col, row)] = (offset, maski)
                 self.map_oi2cr[(offset, maski)] = (col, row)
 
-    def reindex_cr2oi(self):
+    def reindex_by_oi2cr(self):
+        """
+        Used by solver after only modifying oi2cr
+        """
+        cols, rows = self.txtwh()
+        self.map_cr2oi = {}
+        for offset in range(self.nwords()):
+            for maski in range(self.word_bits()):
+                col, row = self.map_oi2cr[(offset, maski)]
+                assert 0 <= col < cols and 0 <= row < rows, (
+                    "bad rc, require 0 <= col %u < cols %u and 0 <= row %u < rows %u"
+                    % (col, row, cols, rows))
+                assert (
+                    col, row
+                ) not in self.map_cr2oi, "col %u, row %u already in map as %u.%u, want to add %u.%u" % (
+                    col, row, self.map_cr2oi[(col, row)][0],
+                    self.map_cr2oi[(col, row)][1], offset, maski)
+                self.map_cr2oi[(col, row)] = (offset, maski)
+
+    def reindex_calc_cr2oi(self, calc_cr2oi=None):
+        if calc_cr2oi is None:
+            calc_cr2oi = self.calc_cr2oi
+        self.map_cr2oi = {}
+        self.map_oi2cr = {}
         cols, rows = self.txtwh()
         for row in range(rows):
             for col in range(cols):
-                res = self.calc_cr2oi(col, row)
+                res = calc_cr2oi(col, row)
                 # parity etc
                 if res is None:
                     continue
@@ -498,6 +534,30 @@ class MaskROM(object):
                 ) not in self.map_oi2cr, "offset %u, maski %u already in map at (%u col %u row)" % (
                     offset, maski, col, row)
                 self.map_cr2oi[(col, row)] = (offset, maski)
+                self.map_oi2cr[(offset, maski)] = (col, row)
+
+    def reindex_by_cr2oi(self):
+        """
+        Used by solver after only modifying cr2oi
+        """
+        self.map_oi2cr = {}
+        cols, rows = self.txtwh()
+        for row in range(rows):
+            for col in range(cols):
+                res = self.map_cr2oi.get((col, row), None)
+                # parity etc
+                if res is None:
+                    continue
+                offset, maski = res
+                assert 0 <= offset < self.nwords(
+                ) and 0 <= maski < self.word_bits(
+                ), "Require 0 <= offset %u < %u and 0 <= maski %u < %u" % (
+                    offset, self.nwords(), maski, self.word_bits())
+
+                assert (
+                    offset, maski
+                ) not in self.map_oi2cr, "offset %u, maski %u already in map at (%u col %u row)" % (
+                    offset, maski, col, row)
                 self.map_oi2cr[(offset, maski)] = (col, row)
 
     def has_calc_oi2cr(self):
@@ -515,12 +575,10 @@ class MaskROM(object):
             return False
 
     def reindex(self):
-        self.map_cr2oi = {}
-        self.map_oi2cr = {}
         if self.has_calc_oi2cr():
-            self.reindex_oi2cr()
+            self.reindex_calc_oi2cr()
         elif self.has_calc_cr2oi():
-            self.reindex_cr2oi()
+            self.reindex_calc_cr2oi()
         else:
             raise Exception("You must implement a conversion function")
         assert len(self.map_cr2oi) == self.bits(

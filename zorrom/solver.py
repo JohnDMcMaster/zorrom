@@ -1,7 +1,5 @@
-from zorrom.archs import arch2mr
 from zorrom import mrom
 import os
-import math
 
 
 def check_binary(can_words, ref_words, word_bits, verbose=False):
@@ -373,7 +371,7 @@ def gen_mr(txtw, txth, word_bits, endian):
     if endian is None:
         endian = "byte"
 
-    class SolverMaskROM(mrom.MaskROM):
+    class SolverMaskROM2(mrom.MaskROM):
         def __init__(self, verbose=False):
             self.verbose = verbose
 
@@ -398,7 +396,7 @@ def gen_mr(txtw, txth, word_bits, endian):
         def get_oi2cr(self, offset, maski):
             assert 0, "Required"
 
-    return SolverMaskROM()
+    return SolverMaskROM2()
 
 
 def parse_ref_words(argstr):
@@ -541,3 +539,157 @@ def run(fn_in,
             open(txt_out, "w").write(keep_match["txt_base"])
 
     return keep_matches, tryi
+
+
+class SolverMaskROM(mrom.MaskROM):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        mrom.MaskROM.__init__(self, verbose=verbose)
+
+        # Actual bits of a loaded ROM
+        # Canonically stored as the binary itself
+        # self.binary = None
+        # Allows converting between txt and binary space
+        # self.map_cr2woi = None
+
+        # self.calc_oi2cr_dict = None
+
+    def desc(self):
+        return 'Solver'
+
+    def seed_reindex_lr(self):
+        # upper left start moving right
+        def ul_oi2cr(offset, maski):
+            bitcol = offset % bit_cols
+            col = maski * bit_cols + bitcol
+            row = offset // bit_cols
+            return (col, row)
+
+        # upper right start moving left
+        def ur_oi2cr(offset, maski):
+            bitcol = bit_cols - 1 - offset % bit_cols
+            col = maski * bit_cols + bitcol
+            row = offset // bit_cols
+            return (col, row)
+
+        def squeeze_lr_oi2cr(offset, maski):
+            left_bit = maski & 0xFFFE
+            if maski % 2 == 0:
+                # cols-right
+                bitcol = offset % bit_cols
+            else:
+                # cols-left (offset by left_bit)
+                bitcol = 2 * bit_cols - 1 - offset % bit_cols
+            col = left_bit * bit_cols + bitcol
+            row = offset // bit_cols
+            return (col, row)
+
+        assert self.param_layout_alg(
+        ) != "squeeze-lr" or self.word_bits() % 2 == 0
+
+        calc_oi2cr = {
+            "cols-right": ul_oi2cr,
+            "cols-left": ur_oi2cr,
+            "squeeze-lr": squeeze_lr_oi2cr,
+        }.get(self.param_layout_alg(), None)
+        if calc_oi2cr is None:
+            return None
+
+        txtw, _txth = self.txtwh()
+        assert txtw % self.word_bits() == 0, "bad width"
+        bit_cols = txtw // self.word_bits()
+        return calc_oi2cr
+
+    def seed_reindex_ud(self):
+        # upper left moving down
+        def ul_oi2cr(offset, maski):
+            # Start left in bit's column and work right
+            bitcol = offset // txth
+            col = maski * bit_cols + bitcol
+            row = offset % txth
+            return (col, row)
+
+        # upper right moving down
+        def ur_oi2cr(offset, maski):
+            # Start right in bit's column and work left
+            bitcol = bit_cols - offset // txth - 1
+            col = maski * bit_cols + bitcol
+            row = offset % txth
+            return (col, row)
+
+        calc_oi2cr = {
+            "cols-downl": ul_oi2cr,
+            "cols-downr": ur_oi2cr,
+        }.get(self.param_layout_alg(), None)
+        if calc_oi2cr is None:
+            return None
+
+        # Must be able to divide input
+        txtw, txth = self.txtwh()
+        assert txth % self.word_bits() == 0
+        bit_cols = txtw // self.word_bits()
+        return calc_oi2cr
+
+    def seed_reindex(self):
+        """
+        Form a basic layout that algorithms can then munge for varients
+        """
+        calc_oi2cr = None
+        for alg_check in (self.seed_reindex_lr, self.seed_reindex_ud):
+            calc_oi2cr = alg_check()
+            if calc_oi2cr is not None:
+                break
+        assert calc_oi2cr, self.layout_alg()
+        self.reindex_calc_oi2cr(calc_oi2cr=calc_oi2cr)
+        # Invalidate b/c we are going to modify then rebuild it
+        self.map_oi2cr = None
+        # print("Seed map size %u" % (len(self.map_oi2cr),))
+
+    def param_layout_alg(self):
+        # Required
+        return self.solver_params()["layout-alg"]
+
+    def param_rotate(self):
+        return self.solver_params().get("rotate", 0)
+
+    def param_flipx(self):
+        return self.solver_params().get("flipx", 0)
+
+    def param_interleaves(self):
+        return self.solver_params().get("interleaves", 1)
+
+    def param_interleave_dir(self):
+        return self.solver_params().get("interleave-dir", None)
+
+    def munge_params(self):
+        txtw, txth = self.txtwh()
+        if self.param_rotate():
+            self.map_cr2oi, wnew, hnew = mrom.td_rotate2(
+                self.param_rotate(), self.map_cr2oi, txtw, txth)
+            # Anything other than 180 will take a lot more thought
+            assert (txtw, txth) == (wnew, hnew)
+        if self.param_flipx():
+            self.map_cr2oi = mrom.td_flipx(self.map_cr2oi, txtw, txth)
+        if self.param_interleave_dir() and self.param_interleaves() > 1:
+            self.map_cr2oi = td_interleave_hor(
+                self.map_cr2oi,
+                txtw,
+                txth,
+                interleaves=self.param_interleaves(),
+                interleave_dir=self.param_interleave_dir(),
+                word_bits=self.word_bits())
+
+    def reindex(self):
+        # Choose seed layout
+        self.seed_reindex()
+        # Shuffle mapping variations
+        self.munge_params()
+        # Rebuild the partially empty index
+        self.reindex_by_cr2oi()
+        print("solver reindexed")
+
+    def calc_oi2cr(self, offset, maski):
+        assert 0, "Dynamic"
+
+    def solver_params(self):
+        assert 0, "Required"
