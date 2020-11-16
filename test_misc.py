@@ -7,6 +7,23 @@ import warnings
 
 from zorrom.archs import arch2mr
 from zorrom import solver
+from zorrom.util import hexdump
+
+
+def check_bin(ref, got, msg):
+    # print(type(got), len(got), type(ref), len(ref))
+    if ref != got:
+        if 1 and got[0:32] != ref[0:32]:
+            dump_got = got[0:32]
+            dump_ref = ref[0:32]
+        else:
+            dump_got = got
+            dump_ref = ref
+        hexdump(dump_ref, "Ref")
+        hexdump(dump_got, "Got")
+        open("test/got.bin", "wb").write(got)
+        open("test/ref.bin", "wb").write(ref)
+        assert 0, msg
 
 
 class TestCase(unittest.TestCase):
@@ -30,10 +47,7 @@ class TestCase(unittest.TestCase):
             mr = mrc()
             got = mr.txt2bin(f_in, f_out)
             ref = open("test/%s.bin" % arch, 'rb').read()
-            # print(type(got), len(got), type(ref), len(ref))
-            open("test/got.bin", "wb").write(got)
-            open("test/ref.bin", "wb").write(ref)
-            assert ref == got, arch
+            check_bin(ref, got, arch)
 
     def test_bin2txt(self):
         for arch in arch2mr.keys():

@@ -1,4 +1,3 @@
-from zorrom.util import hexdump
 from zorrom import mrom
 '''
 Reference ROM: decap #8, #9 (FIXME: add link)

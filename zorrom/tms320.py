@@ -1,4 +1,3 @@
-from zorrom.util import hexdump
 from zorrom import mrom
 
 

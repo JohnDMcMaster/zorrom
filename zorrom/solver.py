@@ -663,14 +663,8 @@ class SolverMaskROM(mrom.MaskROM):
 
     def munge_params(self):
         txtw, txth = self.txtwh()
-        if self.param_rotate():
-            self.map_cr2oi, wnew, hnew = mrom.td_rotate2(
-                self.param_rotate(), self.map_cr2oi, txtw, txth)
-            # Anything other than 180 will take a lot more thought
-            assert (txtw, txth) == (wnew, hnew)
-        if self.param_flipx():
-            self.map_cr2oi = mrom.td_flipx(self.map_cr2oi, txtw, txth)
         if self.param_interleave_dir() and self.param_interleaves() > 1:
+            print("interleaving")
             self.map_cr2oi = td_interleave_hor(
                 self.map_cr2oi,
                 txtw,
@@ -678,6 +672,13 @@ class SolverMaskROM(mrom.MaskROM):
                 interleaves=self.param_interleaves(),
                 interleave_dir=self.param_interleave_dir(),
                 word_bits=self.word_bits())
+        if self.param_flipx():
+            self.map_cr2oi = mrom.td_flipx(self.map_cr2oi, txtw, txth)
+        if self.param_rotate():
+            self.map_cr2oi, wnew, hnew = mrom.td_rotate2(
+                self.param_rotate(), self.map_cr2oi, txtw, txth)
+            # Anything other than 180 will take a lot more thought
+            assert (txtw, txth) == (wnew, hnew)
 
     def reindex(self):
         # Choose seed layout

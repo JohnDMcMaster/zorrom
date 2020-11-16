@@ -2,7 +2,6 @@ from zorrom import solver
 '''
 Reference
 https://www.neviksti.com/DMG/
-
 '''
 
 
