@@ -45,13 +45,16 @@ Exact matches: 2
   Writing DMG_ROM/r-90_flipx-1_invert-0_cols-downr.bin
 ```
 
-Analayzing candidates:
+Analyzing candidates with [Radare2](https://rada.re/n/radare2.html):
 
 ```
-$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-right.bin |head -n 1
-00: 31 fe ff  ld   sp,$FFFE
-$ unidasm -arch lr35902 DMG_ROM/r-90_flipx-1_invert-0_cols-left.bin |head -n 1
-00: 31 11 47  ld   sp,$4711
+$ echo "pd 1" | r2 -a gb DMG_ROM/r-90_flipx-1_invert-0_cols-downr.bin
+[0x00000000]> pd 1
+            0x00000000      31feff         ld sp, 0xfffe
+$ echo "pd 1" | r2 -a gb DMG_ROM/r-90_flipx-1_invert-0_cols-left.bin 
+[0x00000000]> pd 1
+            0x00000000      311147         ld sp, 0x4711
+$ 
 ```
 
 Only the first seems reasonable to setup the stack pointer. Additional analysis of the first binary and/or comparing to existing data shows its the correct binary.
